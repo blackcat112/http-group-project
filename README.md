@@ -6,12 +6,9 @@ Implementation of an HTTP/1.1 client and server from scratch using raw TCP socke
 ---
 
 ## 📁 Project Structure
-- `/core` — HTTP parser and serializer
-- `/client-lib` — TCP client library
-- `/client-cli` — Interactive CLI client
-- `/server-lib` — TCP server library
-- `/server-api` — REST API endpoints
-- `/features` — Optional features
+- `/server` — TCP socket management, concurrency, HTTP request parsing
+- `/client` — HTTP client library and interactive CLI
+- `/premium` — TLS encryption and login authentication system
 
 ---
 
@@ -19,21 +16,18 @@ Implementation of an HTTP/1.1 client and server from scratch using raw TCP socke
 
 ```bash
 # Server
-node server-api/index.js --port 3000
+node server/index.js --port 3000
 
 # Client
-node client-cli/index.js
+node client/cli.js
 ```
 
 ---
 
 ## 👥 Team
-- Persona 1 — Core Parser
-- Persona 2 — Client CLI
-- Persona 3 — Server Library
-- Persona 4 — REST API
-- Persona 5 — Authentication
-- Persona 6 — Testing & Infra
+- Pareja A (server) — TCP Motor: sockets, concurrency, HTTP parsing
+- Pareja B (client) — Client & CLI: HTTP messages, response handling
+- Pareja C (premium) — Premium features: TLS, login flow
 
 ---
 
@@ -50,14 +44,11 @@ node client-cli/index.js
 - `develop` → rama de integración. Se mergea a `main` solo al entregar.
 
 ### Ramas de trabajo
-Cada persona crea su rama desde `develop`:
+Cada pareja crea su rama desde `develop`:
 ```
-feature/core
-feature/client-lib
-feature/client-cli
-feature/server-lib
-feature/server-api
-feature/infra
+feature/server
+feature/client
+feature/premium
 ```
 
 ### Cómo trabajar cada día
@@ -74,16 +65,16 @@ git add .
 git commit -m "feat: descripción corta de lo que hiciste"
 git push origin feature/tu-area
 
-# 4. Cuando tu área esté lista, abre un Pull Request a develop en GitHub
+# 4. Cuando vuestra área esté lista, abrid un Pull Request a develop en GitHub
 ```
 
 ### Reglas de commits (obligatorias)
 Usar siempre este formato:
 ```
-feat: añadir parseRequest al core
+feat: añadir parseRequest al servidor
 fix: corregir parsing de headers con espacios
 chore: actualizar .gitignore
-docs: añadir sección de autenticación al README
+docs: añadir sección de TLS al README
 test: añadir tests para endpoint GET /cats
 refactor: separar lógica de routing en fichero aparte
 ```
@@ -91,7 +82,7 @@ refactor: separar lógica de routing en fichero aparte
 ### Reglas de Pull Request
 - Mínimo **1 compañero** debe revisar antes de mergear a `develop`
 - No se mergea si hay conflictos sin resolver
-- El título del PR debe describir qué hace: `feat: client library con soporte TCP`
+- El título del PR debe describir qué hace: `feat: TCP server con concurrencia`
 
 ### ⚠️ Prohibido
 - Pushear directamente a `main` o `develop`
@@ -105,12 +96,9 @@ refactor: separar lógica de routing en fichero aparte
 ```
 main        ←────────────────── solo al entregar (13 mayo)
   │
-develop     ←── PR revisado ←── feature/core
-                               feature/client-lib
-                               feature/client-cli
-                               feature/server-lib
-                               feature/server-api
-                               feature/infra
+develop     ←── PR revisado ←── feature/server
+                               feature/client
+                               feature/premium
 ```
 
 ---
