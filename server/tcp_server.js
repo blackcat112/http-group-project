@@ -11,6 +11,14 @@ const activeSockets = new Set();
  */
 function startServer(port) {
     const server = net.createServer((socket) => {
+        // Defensas contra saturación de usuarios
+        if (activeSockets.size >= 1000) {
+            console.warn('[!] Límite de concurrencia sobrepasado (1000). Repeliendo usuario.');
+            socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\nServidor Lleno\n');
+            socket.end();
+            return;
+        }
+
         // Registro de clientes en memoria
         activeSockets.add(socket);
         console.log(`[+] Nuevo cliente conectado. Total activos: ${activeSockets.size}`);
@@ -57,12 +65,12 @@ function startServer(port) {
                     const resString = handleRequest(reqObj);
                     
                     socket.write(resString);
-                    socket.end(); // De momento lo desconectamos tras responder
+                    // Mantenemos el socket abierto por defecto para soportar HTTP/1.1 (Keep-Alive)
                 } catch (err) {
                     console.error("[TCP Exception] Error parseando request:", err);
                     socket.write('HTTP/1.1 400 Bad Request\r\n\r\nBad Request\n');
-                    socket.end(); // Rompemos comunicación si manda basura.
-                    return;
+                    socket.end(); // Rompemos comunicación si intentan hackear el parseador
+                    break;
                 }
             }
         });
