@@ -23,6 +23,13 @@ function startServer(port) {
         activeSockets.add(socket);
         console.log(`[+] Nuevo cliente conectado. Total activos: ${activeSockets.size}`);
 
+        // Recolector de basura: destruir conexión si el cliente no habla en 10 segundos
+        socket.setTimeout(10000);
+        socket.on('timeout', () => {
+            console.log(`[!] Timeout alcanzado. Destruyendo socket zombi...`);
+            socket.destroy();
+        });
+
         // Acumulación de chunks TCP
         // Usamos un Buffer auténtico de Node por si luego hay que parsear archivos binarios o imágenes.
         let buffer = Buffer.alloc(0);
