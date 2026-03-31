@@ -17,7 +17,14 @@ const tcpContext = startServer(port);
 process.on('SIGINT', () => {
     console.log('\n[!] Señal SIGINT recibida (Ctrl+C). Preparando apagado...');
     
-    // TODO: Cerrar conexiones limpiamente antes de tirar el proceso
-    console.log('[+] El sistema se ha apagado sin corrupciones.');
-    process.exit(0);
+    // Cerrar todas las conexiones activas primero
+    for (const socket of tcpContext.activeSockets) {
+        socket.destroy();
+    }
+    
+    // Apagar el motor principal de forma controlada
+    tcpContext.server.close(() => {
+        console.log('[+] El sistema se ha apagado sin corrupciones.');
+        process.exit(0);
+    });
 });
