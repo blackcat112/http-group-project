@@ -83,7 +83,12 @@ function startServer(port) {
         });
 
         socket.on('error', (err) => {
-            console.error('[Socket Error]:', err.message);
+            // Defensas contra clientes que cierran la pestaña o pierden el internet (F4/WiFi drop)
+            if (err.code === 'ECONNRESET') {
+                console.log(`[!] Omitiendo error de red: El cliente cerró la conexión HTTP de forma violenta.`);
+            } else {
+                console.error('[TCP Error Crítico]:', err.message);
+            }
         });
 
         // Destructor del cliente al perder conexión
