@@ -1,0 +1,37 @@
+name: 🏥 Server Health Check
+
+# Se ejecuta siempre que alguien intente inyectar código a las ramas principales
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/*'
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Clonar el repositorio
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Configurar Entorno Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Demostramos que sabemos arrancar el proyecto de manera nativa sin la carpeta magica de dependencias
+      - name: 🚀 Arrancar Motor TCP (Background)
+        run: |
+          node server/index.js --port 3000 &
+          # Damos 2 segundos al motor para asentar el puerto
+          sleep 2
+
+      - name: 🕵️‍♀️ Validar Respuesta del Servidor Crudo
+        run: |
+          # El flag -f forza a curl a fallar/explotar si el server responde un 404 o 500
+          # El flag -v muestra las cabeceras completas de HTTP al profesor en la consola de GitHub
+          curl -f -v http://localhost:3000/status
