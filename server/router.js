@@ -78,4 +78,29 @@ registerRoute('GET', '/dogs', (req) => {
     });
 });
 
+registerRoute('POST', '/dogs', (req) => {
+    let newDog;
+    try {
+        newDog = JSON.parse(req.body);
+    } catch (e) {
+        return buildResponse({
+            statusCode: 400,
+            statusText: 'Bad Request',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ error: "El cuerpo de la petición debe ser un JSON válido" })
+        });
+    }
+
+    // Le asignamos el próximo id disponible y lo guardamos
+    newDog.id = nextDogId++;
+    dogs.push(newDog);
+
+    return buildResponse({
+        statusCode: 201,
+        statusText: 'Created',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newDog)
+    });
+});
+
 module.exports = { registerRoute, handleRequest };
