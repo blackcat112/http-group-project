@@ -19,11 +19,11 @@ function registerRoute(method, path, handler) {
  */
 function handleRequest(req) {
     const { method, path } = req;
-    
+
     console.log(`[Router] Buscando handler para ${method} ${path}`);
-    
+
     const handler = routes[method] && routes[method][path];
-    
+
     if (handler) {
         return handler(req);
     }
@@ -56,6 +56,25 @@ registerRoute('GET', '/status', (req) => {
         statusText: 'OK',
         headers: { 'Content-Type': 'text/plain' },
         body: "Servidor operativo."
+    });
+});
+
+// ==========================================
+// Base de datos en memoria (CRUD Perros)
+// ==========================================
+let dogs = [
+    { id: 1, name: "Hercules", breed: "Mastín", age: 3 },
+    { id: 2, name: "Luna", breed: "Labrador", age: 1 }
+];
+let nextDogId = 3;
+
+registerRoute('GET', '/dogs', (req) => {
+    // Listar todos los recursos
+    return buildResponse({
+        statusCode: 200,
+        statusText: 'OK',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dogs)
     });
 });
 
