@@ -145,6 +145,29 @@ registerRoute('GET', '/dogs/:id', (req) => {
     });
 });
 
+registerRoute('DELETE', '/dogs/:id', (req) => {
+    const id = parseInt(req.params.id, 10);
+    const dogIndex = dogs.findIndex((item) => item.id === id);
+
+    if (dogIndex === -1) {
+        return buildResponse({
+            statusCode: 404,
+            statusText: 'Not Found',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ error: 'Perro no encontrado' })
+        });
+    }
+
+    dogs.splice(dogIndex, 1);
+
+    return buildResponse({
+        statusCode: 204,
+        statusText: 'No Content',
+        headers: { 'Content-Type': 'application/json' },
+        body: ''
+    });
+});
+
 registerRoute('POST', '/dogs', (req) => {
     let newDog;
     try {
