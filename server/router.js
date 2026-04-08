@@ -145,6 +145,43 @@ registerRoute('GET', '/dogs/:id', (req) => {
     });
 });
 
+registerRoute('PUT', '/dogs/:id', (req) => {
+    const id = parseInt(req.params.id, 10);
+    const dogIndex = dogs.findIndex((item) => item.id === id);
+
+    if (dogIndex === -1) {
+        return buildResponse({
+            statusCode: 404,
+            statusText: 'Not Found',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ error: 'Perro no encontrado' })
+        });
+    }
+
+    let updatedData;
+    try {
+        updatedData = JSON.parse(req.body);
+    } catch (e) {
+        return buildResponse({
+            statusCode: 400,
+            statusText: 'Bad Request',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ error: 'JSON malformado' })
+        });
+    }
+
+    const existingDog = dogs[dogIndex];
+    const updatedDog = Object.assign({}, existingDog, updatedData, { id: existingDog.id });
+    dogs[dogIndex] = updatedDog;
+
+    return buildResponse({
+        statusCode: 200,
+        statusText: 'OK',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedDog)
+    });
+});
+
 registerRoute('DELETE', '/dogs/:id', (req) => {
     const id = parseInt(req.params.id, 10);
     const dogIndex = dogs.findIndex((item) => item.id === id);
