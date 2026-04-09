@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Servidor HTTP/1.1 TCP</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #f0f4f8; color: #102a43; margin: 0; padding: 2rem; }
+    main { max-width: 760px; margin: auto; background: #ffffff; border-radius: 12px; box-shadow: 0 12px 28px rgba(16, 42, 67, 0.12); padding: 2rem; }
+    h1 { margin-top: 0; color: #102a43; }
+    ul { line-height: 1.75; }
+    code { background: #f1f5f9; padding: 0.2rem 0.4rem; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Servidor HTTP/1.1 TCP</h1>
+    <p>Esta página está lista para ser servida como contenido estático. Más tarde puede copiarse a la carpeta pública del servidor.</p>
+    <p>Endpoints disponibles en el proyecto:</p>
+    <ul>
+      <li><code>GET /dogs</code></li>
+      <li><code>GET /dogs/1</code></li>
+      <li><code>PUT /dogs/1</code></li>
+      <li><code>DELETE /dogs/1</code></li>
+      <li><code>POST /dogs</code></li>
+    </ul>
+    <p>Para servir este archivo más adelante, muévelo a la carpeta pública y configura el enrutador para devolverlo en la ruta estática deseada.</p>
+  </main>
+</body>
+</html>
