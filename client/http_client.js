@@ -138,7 +138,7 @@ function request({ method, url, headers = {}, body = null }) {
       }
     });
 
-    socket.on('end', () => {
+    socket.on('end', () => { // por ejemplo si conection: close el servidor cierra la conexión después de enviar la respuesta
       if (rawResponse.length > 0) {
         resolve(parseResponse(rawResponse));
       }
