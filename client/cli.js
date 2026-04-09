@@ -49,7 +49,13 @@ async function main() {
   console.log('║  Write "exit" in the URL to quit     ║');
   console.log('╚══════════════════════════════════════╝\n');
 
+  let requestCount = 0;
+
   while (true) {
+    if (requestCount > 0) {
+      console.log('════════════════ NEXT REQUEST ══════════════\n');
+    }
+
     const url = await prompt('URL    : ');
     if (url.toLowerCase() === 'exit') break;
 
@@ -86,9 +92,11 @@ async function main() {
     } catch (err) {
       console.error(`Error: ${err.message}\n`);
     }
+
+    requestCount++;
   }
 
-  console.log('\nGoodbye 👋');
+  console.log('\nGoodbye');
   rl.close();
 }
 
