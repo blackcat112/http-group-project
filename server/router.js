@@ -1,4 +1,6 @@
 const { buildResponse } = require('./http_response');
+const fs = require('fs');
+const path = require('path');
 
 const routes = {
     'GET': {},
@@ -103,6 +105,26 @@ registerRoute('GET', '/status', (req) => {
         headers: { 'Content-Type': 'text/plain' },
         body: "Servidor operativo."
     });
+});
+
+registerRoute('GET', '/index.html', (req) => {
+    try {
+        const filePath = path.join(__dirname, '..', 'public', 'index.html');
+        const fileContents = fs.readFileSync(filePath, 'utf8');
+        return buildResponse({
+            statusCode: 200,
+            statusText: 'OK',
+            headers: { 'Content-Type': 'text/html' },
+            body: fileContents
+        });
+    } catch (error) {
+        return buildResponse({
+            statusCode: 404,
+            statusText: 'Not Found',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ error: 'Archivo estático no encontrado' })
+        });
+    }
 });
 
 // ==========================================
