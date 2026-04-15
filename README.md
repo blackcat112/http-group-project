@@ -118,3 +118,38 @@ git config --global user.email "tu@email.com"
 git checkout develop
 git checkout -b feature/tu-area
 ```
+
+
+# Avances en el Servidor HTTP/1.1
+
+Esta sección documenta el progreso en la implementación del servidor HTTP/1.1 desde cero, usando sockets TCP puros en Node.js.
+
+## Funcionalidades Implementadas
+
+### Routing Dinámico
+- Sistema de rutas con parámetros dinámicos (ej. `/dogs/:id`)
+- Soporte para métodos GET, POST, PUT, DELETE
+- Función `matchRoute()` que compara segmentos de ruta y extrae parámetros
+
+### API RESTful para Perros
+- `GET /dogs` — Lista todos los perros
+- `GET /dogs/:id` — Obtiene un perro específico
+- `POST /dogs` — Crea un nuevo perro (JSON en body)
+- `PUT /dogs/:id` — Actualiza un perro existente
+- `DELETE /dogs/:id` — Elimina un perro
+- `GET /index.html` - Devuelve un archivo html
+
+### Tests con Bruno
+- Colección completa de pruebas HTTP en `server/bruno/httpGroup/`
+- Tests para todos los endpoints CRUD
+- Configurados para `http://localhost:3000`
+
+### Contenido Estático
+- Archivo `public/index.html` listo para servir
+- Página HTML básica con información del proyecto
+
+## Estado Actual
+- Servidor TCP funcional con buffering y concurrencia
+- Parser HTTP básico
+- Router con CRUD completo en memoria
+- Respuestas HTTP con códigos estándar (200, 201, 204, 400, 404)
