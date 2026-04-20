@@ -153,3 +153,35 @@ Esta sección documenta el progreso en la implementación del servidor HTTP/1.1 
 - Parser HTTP básico
 - Router con CRUD completo en memoria
 - Respuestas HTTP con códigos estándar (200, 201, 204, 400, 404)
+
+# Avances en el Cliente HTTP/1.1
+
+Esta sección documenta el progreso en la implementación del cliente HTTP/1.1 desde cero, usando sockets TCP puros en Node.js.
+
+## Funcionalidades Implementadas
+
+### Librería cliente (`http-client.js`)
+- `parseUrl(url)` — descompone la URL en host, puerto y path
+- `buildRequest(method, path, host, headers, body)` — construye el mensaje HTTP/1.1 completo con `\r\n` correctos, headers automáticos (`Host`, `Content-Type`, `Content-Length`) y body serializado
+- `parseResponse(raw)` — extrae status code, status text, headers y body de la respuesta raw
+- `request({ method, url, headers, body })` — función principal: abre el socket TCP, envía la petición, acumula chunks y resuelve la promesa cuando `Content-Length` está completo
+
+### CLI interactivo (`cli.js`)
+- Bucle infinito de peticiones sin necesidad de reiniciar el programa
+- Entrada guiada por prompts: URL, método, headers extra y body JSON
+- Separador visual `NEXT REQUEST` entre peticiones sucesivas
+- Formateador de respuesta con status, headers y body (pretty-print JSON automático)
+- Salida limpia escribiendo `exit` en el campo URL
+
+### Pruebas realizadas
+- `GET /dogs` → 200 OK con array completo 
+- `GET /dogs/:id` → 200 OK con recurso individual 
+- `POST /dogs` → 201 Created con id asignado 
+- `PUT /dogs/:id` → 200 OK con recurso actualizado 
+- `DELETE /dogs/:id` → 204 No Content 
+- `GET /dogs/999` → 404 Not Found 
+
+## Estado Actual
+- Librería cliente funcional sobre TCP raw (solo módulo `net` de Node.js)
+- CLI interactivo completo con todas las funcionalidades obligatorias
+- Compatible con el servidor del equipo y con servidores externos reales (`http://`)
