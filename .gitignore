@@ -6,4 +6,3 @@ dist/
 .vscode/
 .env
 internal/
-premium/certs/*.pem

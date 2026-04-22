@@ -4,8 +4,5 @@ const { loadTlsCredentials } = require('./tls/tls_config');
 const { setupTlsStack } = require('./tls/setup');
 
 module.exports = {
-    setupTlsStack,
-    createTlsUpgrader,
-    createLoginValidator,
-    loadTlsCredentials
+    setupTlsStack
 };

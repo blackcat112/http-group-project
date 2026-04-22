@@ -13,9 +13,9 @@ function mustExistFile(filePath, label) {
 }
 
 function loadTlsCredentials({
-    keyPath,
-    certPath,
-    caPath,
+    keyPath, //private key
+    certPath,  //public cert
+    caPath,  //certificator autority (optional)
     rejectUnauthorized = false,
     minVersion = 'TLSv1.2',
     cwd = process.cwd()

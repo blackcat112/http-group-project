@@ -153,3 +153,5 @@ Esta sección documenta el progreso en la implementación del servidor HTTP/1.1 
 - Parser HTTP básico
 - Router con CRUD completo en memoria
 - Respuestas HTTP con códigos estándar (200, 201, 204, 400, 404)
+
+- Infraestructura para TLS (solo infraestructura, sin implementar en el servidor /server)
