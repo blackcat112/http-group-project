@@ -5,6 +5,7 @@
   ".json": "application/json",
   ".png": "image/png",
   ".jpg": "image/jpeg",
+  ".gif": "image/gif",
   ".mp4": "video/mp4",
   ".pdf": "application/pdf"
 }

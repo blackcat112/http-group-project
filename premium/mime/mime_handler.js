@@ -8,7 +8,7 @@ class MimeHandler {
     return mimeTypes[ext] || "application/octet-stream";
   }
 
-  static getFileBuffer(filePath) {
+  static getFileContent(filePath) {
     try {
       return fs.readFileSync(filePath);
     } catch (error) {
