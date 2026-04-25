@@ -139,6 +139,11 @@ Esta sección documenta el progreso en la implementación del servidor HTTP/1.1 
 - `DELETE /dogs/:id` — Elimina un perro
 - `GET /index.html` - Devuelve un archivo html
 
+### 🛡️ Seguridad (Auth API Key)
+- Middleware global nativo que protege todas las rutas del servidor.
+- Autenticación rápida inyectable desde consola usando el argumento `--api-key [tu_clave]`.
+- Exige obligatoriamente la cabecera HTTP `x-api-key` a los clientes, escupiendo respuestas HTTP `401 Unauthorized` ante infracciones.
+
 ### Tests con Bruno
 - Colección completa de pruebas HTTP en `server/bruno/httpGroup/`
 - Tests para todos los endpoints CRUD
