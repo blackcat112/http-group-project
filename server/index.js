@@ -1,13 +1,24 @@
 const { startServer } = require('./tcp_server');
 
-// Leemos argumentos de linea de comandos para extraer --port
+const { setApiKey } = require('./router');
+
+// Leemos argumentos de linea de comandos para extraer --port y --api-key
 const args = process.argv.slice(2);
 let port = 3000; // default
+let apiKey = null;
 
 for (let i = 0; i < args.length; i++) {
     if (args[i] === '--port' && args[i + 1]) {
         port = parseInt(args[i + 1], 10);
+    } else if (args[i] === '--api-key' && args[i + 1]) {
+        apiKey = args[i + 1];
     }
+}
+
+// Inyectamos la API key elegida en el enrutador antes de levantar internet
+if (apiKey) {
+    setApiKey(apiKey);
+    console.log(`[*] Modo Seguro activado. API Key configurada: ${apiKey}`);
 }
 
 // Arrancar motor principal TCP y guardar contexto para el apagado
