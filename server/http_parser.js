@@ -30,12 +30,36 @@ function parseRequest(rawData) {
         }
     }
 
+    let parsedBody = body;
+    let bodyError = null;
+
+    if (body && headers['content-type']) {
+        const contentType = headers['content-type'];
+        if (contentType.includes('application/json')) {
+            try {
+                parsedBody = JSON.parse(body);
+            } catch (e) {
+                bodyError = 'JSON malformado';
+            }
+        } else if (contentType.includes('application/x-www-form-urlencoded')) {
+            parsedBody = {};
+            body.split('&').forEach(pair => {
+                const [key, value] = pair.split('=');
+                if (key) {
+                    parsedBody[decodeURIComponent(key)] = decodeURIComponent(value || '');
+                }
+            });
+        }
+    }
+
     return {
         method: method || 'GET',
         path: path || '/',
         version: version || 'HTTP/1.1',
         headers,
-        body
+        body: parsedBody,
+        rawBody: body,
+        bodyError
     };
 }
 

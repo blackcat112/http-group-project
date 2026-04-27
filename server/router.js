@@ -79,6 +79,11 @@ function handleRequest(req) {
 
     console.log(`[Router] Buscando handler para ${method} ${path}`);
 
+    // Middleware global en crudo: Comprobar errores de parseo (ej: JSON malformado)
+    if (req.bodyError) {
+        return build400BadRequest(req.bodyError);
+    }
+
     // Middleware global en crudo: Comprobar API Key si el servidor requiere autenticación
     if (globalApiKey) {
         if (req.headers['x-api-key'] !== globalApiKey) {
@@ -162,12 +167,10 @@ registerRoute('PUT', '/dogs/:id', (req) => {
         return build404NotFound('Perro no encontrado');
     }
 
-    let updatedData;
-    try {
-        updatedData = JSON.parse(req.body);
-    } catch (e) {
-        return build400BadRequest('JSON malformado');
+    if (typeof req.body !== 'object' || req.body === null) {
+        return build400BadRequest('Se esperaba un objeto JSON válido en el body');
     }
+    const updatedData = req.body;
 
     const existingDog = dogs[dogIndex];
     const updatedDog = Object.assign({}, existingDog, updatedData, { id: existingDog.id });
@@ -195,12 +198,10 @@ registerRoute('DELETE', '/dogs/:id', (req) => {
 });
 
 registerRoute('POST', '/dogs', (req) => {
-    let newDog;
-    try {
-        newDog = JSON.parse(req.body);
-    } catch (e) {
-        return build400BadRequest('El cuerpo de la petición debe ser un JSON válido');
+    if (typeof req.body !== 'object' || req.body === null) {
+        return build400BadRequest('Se esperaba un objeto JSON válido en el body');
     }
+    const newDog = req.body;
 
     // Le asignamos el próximo id disponible y lo guardamos
     newDog.id = nextDogId++;
