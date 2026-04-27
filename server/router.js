@@ -7,12 +7,21 @@ const routes = {
     'POST': {}
 };
 
+let globalApiKey = null;
+
 /**
  * Registra un handler para un path y un http method dado.
  */
 function registerRoute(method, path, handler) {
     if (!routes[method]) routes[method] = {};
     routes[method][path] = handler;
+}
+
+/**
+ * Establece globalmente la API key del servidor desde el index.js
+ */
+function setApiKey(key) {
+    globalApiKey = key;
 }
 
 /**
@@ -69,6 +78,19 @@ function handleRequest(req) {
     const { method, path } = req;
 
     console.log(`[Router] Buscando handler para ${method} ${path}`);
+
+    // Middleware global en crudo: Comprobar API Key si el servidor requiere autenticación
+    if (globalApiKey) {
+        if (req.headers['x-api-key'] !== globalApiKey) {
+            console.log(`[Router] Bloqueando petición sin API Key válida.`);
+            return buildResponse({
+                statusCode: 401,
+                statusText: 'Unauthorized',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ error: 'Acceso denegado. API Key inválida o inexistente en cabecera x-api-key.' })
+            });
+        }
+    }
 
     const match = matchRoute(method, path);
     if (match) {
@@ -252,4 +274,4 @@ registerRoute('POST', '/dogs', (req) => {
     });
 });
 
-module.exports = { registerRoute, handleRequest };
+module.exports = { registerRoute, handleRequest, setApiKey };
