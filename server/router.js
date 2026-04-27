@@ -1,4 +1,4 @@
-const { buildResponse } = require('./http_response');
+const { buildResponse, buildJSONResponse, build404NotFound, build400BadRequest } = require('./http_response');
 const fs = require('fs');
 const path = require('path');
 
@@ -83,12 +83,7 @@ function handleRequest(req) {
     if (globalApiKey) {
         if (req.headers['x-api-key'] !== globalApiKey) {
             console.log(`[Router] Bloqueando petición sin API Key válida.`);
-            return buildResponse({
-                statusCode: 401,
-                statusText: 'Unauthorized',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ error: 'Acceso denegado. API Key inválida o inexistente en cabecera x-api-key.' })
-            });
+            return buildJSONResponse(401, 'Unauthorized', { error: 'Acceso denegado. API Key inválida o inexistente en cabecera x-api-key.' });
         }
     }
 
@@ -99,12 +94,7 @@ function handleRequest(req) {
     }
 
     // Si la ruta no existe, devolvemos un 404
-    return buildResponse({
-        statusCode: 404,
-        statusText: 'Not Found',
-        headers: { 'Content-Type': 'text/plain' },
-        body: '404 - Ruta no encontrada en el servidor.\n'
-    });
+    return build404NotFound('Ruta no encontrada en el servidor');
 }
 
 // ==========================================
@@ -112,12 +102,7 @@ function handleRequest(req) {
 // ==========================================
 
 registerRoute('GET', '/', (req) => {
-    return buildResponse({
-        statusCode: 200,
-        statusText: 'OK',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: "¡Hola Mundo desde el Servidor TCP crudo!" })
-    });
+    return buildJSONResponse(200, 'OK', { message: "¡Hola Mundo desde el Servidor TCP crudo!" });
 });
 
 registerRoute('GET', '/status', (req) => {
@@ -140,12 +125,7 @@ registerRoute('GET', '/index.html', (req) => {
             body: fileContents
         });
     } catch (error) {
-        return buildResponse({
-            statusCode: 404,
-            statusText: 'Not Found',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ error: 'Archivo estático no encontrado' })
-        });
+        return build404NotFound('Archivo estático no encontrado');
     }
 });
 
@@ -160,12 +140,7 @@ let nextDogId = 3;
 
 registerRoute('GET', '/dogs', (req) => {
     // Listar todos los recursos
-    return buildResponse({
-        statusCode: 200,
-        statusText: 'OK',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dogs)
-    });
+    return buildJSONResponse(200, 'OK', dogs);
 });
 
 registerRoute('GET', '/dogs/:id', (req) => {
@@ -173,20 +148,10 @@ registerRoute('GET', '/dogs/:id', (req) => {
     const dog = dogs.find((item) => item.id === id);
 
     if (!dog) {
-        return buildResponse({
-            statusCode: 404,
-            statusText: 'Not Found',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ error: 'Perro no encontrado' })
-        });
+        return build404NotFound('Perro no encontrado');
     }
 
-    return buildResponse({
-        statusCode: 200,
-        statusText: 'OK',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dog)
-    });
+    return buildJSONResponse(200, 'OK', dog);
 });
 
 registerRoute('PUT', '/dogs/:id', (req) => {
@@ -194,36 +159,21 @@ registerRoute('PUT', '/dogs/:id', (req) => {
     const dogIndex = dogs.findIndex((item) => item.id === id);
 
     if (dogIndex === -1) {
-        return buildResponse({
-            statusCode: 404,
-            statusText: 'Not Found',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ error: 'Perro no encontrado' })
-        });
+        return build404NotFound('Perro no encontrado');
     }
 
     let updatedData;
     try {
         updatedData = JSON.parse(req.body);
     } catch (e) {
-        return buildResponse({
-            statusCode: 400,
-            statusText: 'Bad Request',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ error: 'JSON malformado' })
-        });
+        return build400BadRequest('JSON malformado');
     }
 
     const existingDog = dogs[dogIndex];
     const updatedDog = Object.assign({}, existingDog, updatedData, { id: existingDog.id });
     dogs[dogIndex] = updatedDog;
 
-    return buildResponse({
-        statusCode: 200,
-        statusText: 'OK',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedDog)
-    });
+    return buildJSONResponse(200, 'OK', updatedDog);
 });
 
 registerRoute('DELETE', '/dogs/:id', (req) => {
@@ -231,12 +181,7 @@ registerRoute('DELETE', '/dogs/:id', (req) => {
     const dogIndex = dogs.findIndex((item) => item.id === id);
 
     if (dogIndex === -1) {
-        return buildResponse({
-            statusCode: 404,
-            statusText: 'Not Found',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ error: 'Perro no encontrado' })
-        });
+        return build404NotFound('Perro no encontrado');
     }
 
     dogs.splice(dogIndex, 1);
@@ -244,7 +189,7 @@ registerRoute('DELETE', '/dogs/:id', (req) => {
     return buildResponse({
         statusCode: 204,
         statusText: 'No Content',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {},
         body: ''
     });
 });
@@ -254,24 +199,14 @@ registerRoute('POST', '/dogs', (req) => {
     try {
         newDog = JSON.parse(req.body);
     } catch (e) {
-        return buildResponse({
-            statusCode: 400,
-            statusText: 'Bad Request',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ error: "El cuerpo de la petición debe ser un JSON válido" })
-        });
+        return build400BadRequest('El cuerpo de la petición debe ser un JSON válido');
     }
 
     // Le asignamos el próximo id disponible y lo guardamos
     newDog.id = nextDogId++;
     dogs.push(newDog);
 
-    return buildResponse({
-        statusCode: 201,
-        statusText: 'Created',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newDog)
-    });
+    return buildJSONResponse(201, 'Created', newDog);
 });
 
 module.exports = { registerRoute, handleRequest, setApiKey };
