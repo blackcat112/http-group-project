@@ -70,13 +70,46 @@ function buildRequest(method, path, host, headers = {}, body = null) {
   return message;
 }
 
+// ─── CHUNKED DECODER ──────────────────────────────────────────────────────────
+
+/**
+ * Decodes a chunked-transfer-encoded body into a plain string.
+ * Format per chunk: "<hex-size>\r\n<data>\r\n" — terminated by "0\r\n\r\n"
+ *
+ * decodeChunked('1a\r\nThis is the first chunk\r\n0\r\n\r\n')
+ *  -> 'This is the first chunk'
+ *
+ * @param {string} raw  — raw body after the header/body separator
+ * @returns {string}    — decoded body
+ */
+function decodeChunked(raw) {
+  let result = '';
+  let i = 0;
+
+  while (i < raw.length) {
+    const crlfPos = raw.indexOf('\r\n', i);   // end of the size line
+    if (crlfPos === -1) break;
+
+    const sizeLine = raw.substring(i, crlfPos).trim();  // e.g. "1a" or "1a;ext"
+    const chunkSize = parseInt(sizeLine, 16);            // parse hex → decimal
+
+    if (isNaN(chunkSize) || chunkSize === 0) break;      // 0 chunk = end of body
+
+    const chunkStart = crlfPos + 2;                      // skip \r\n after size
+    result += raw.substring(chunkStart, chunkStart + chunkSize);
+    i = chunkStart + chunkSize + 2;                      // skip chunk data + trailing \r\n
+  }
+
+  return result;
+}
+
 // ─── RESPONSE PARSER ──────────────────────────────────────────────────────────
 
 function parseResponse(rawResponse) {
   const headerEnd = rawResponse.indexOf('\r\n\r\n');
 
   const rawHeaders = rawResponse.substring(0, headerEnd);
-  const body       = rawResponse.substring(headerEnd + 4);
+  let body         = rawResponse.substring(headerEnd + 4);  // let en vez de const
 
   const lines = rawHeaders.split('\r\n');
 
@@ -95,6 +128,11 @@ function parseResponse(rawResponse) {
       const value = line.substring(separatorIdx + 1).trim();
       headers[key] = value;
     }
+  }
+
+  // decode chunked body if server used Transfer-Encoding: chunked
+  if (headers['transfer-encoding'] === 'chunked') {
+    body = decodeChunked(body);
   }
 
   return { statusCode, statusText, headers, body };
@@ -155,5 +193,8 @@ function request({ method, url, headers = {}, body = null }) {
     });
   });
 }
+
+
+
 
 module.exports = { request, parseUrl, buildRequest, parseResponse };
