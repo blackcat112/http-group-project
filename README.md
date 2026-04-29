@@ -159,8 +159,6 @@ Esta sección documenta el progreso en la implementación del servidor HTTP/1.1 
 - Router con CRUD completo en memoria
 - Respuestas HTTP con códigos estándar (200, 201, 204, 400, 404)
 
-- Infraestructura para TLS (solo infraestructura, sin implementar en el servidor /server)
-
 # Avances en el Cliente HTTP/1.1
 
 Esta sección documenta el progreso en la implementación del cliente HTTP/1.1 desde cero, usando sockets TCP puros en Node.js.
@@ -192,3 +190,8 @@ Esta sección documenta el progreso en la implementación del cliente HTTP/1.1 d
 - Librería cliente funcional sobre TCP raw (solo módulo `net` de Node.js)
 - CLI interactivo completo con todas las funcionalidades obligatorias
 - Compatible con el servidor del equipo y con servidores externos reales (`http://`)
+
+# Avances en premium:
+
+- Infraestructura para TLS (solo infraestructura, sin implementar en el servidor /server)
+- Unit test automático, tanto para premium como para server
