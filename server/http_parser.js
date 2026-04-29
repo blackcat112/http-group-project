@@ -16,7 +16,29 @@ function parseRequest(rawData) {
     }
 
     const lines = rawHeaders.split('\r\n');
-    const [method, path, version] = lines[0].split(' ');
+    const [method, rawPath = '/', version = 'HTTP/1.1'] = lines[0].split(' ');
+    
+    let path = rawPath;
+    let query = {};
+    
+    const queryIndex = rawPath.indexOf('?');
+    if (queryIndex !== -1) {
+        path = rawPath.substring(0, queryIndex);
+        const queryString = rawPath.substring(queryIndex + 1);
+        
+        queryString.split('&').forEach(pair => {
+            const [k, v] = pair.split('=');
+            if (k) {
+                query[decodeURIComponent(k)] = decodeURIComponent(v || '');
+            }
+        });
+    }
+
+    try {
+        path = decodeURI(path);
+    } catch (e) {
+        // Ignorar si hay una secuencia malformada
+    }
     
     const headers = {};
     for (let i = 1; i < lines.length; i++) {
@@ -55,6 +77,7 @@ function parseRequest(rawData) {
     return {
         method: method || 'GET',
         path: path || '/',
+        query,
         version: version || 'HTTP/1.1',
         headers,
         body: parsedBody,
