@@ -6,7 +6,7 @@
   "scripts": {
     "start:server": "node server/index.js",
     "dev:server": "node server/index.js --port 3000",
-    "test": "jest"
+    "test": "node --test"
   },
   "keywords": [
     "http",

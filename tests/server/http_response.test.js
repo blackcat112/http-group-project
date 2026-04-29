@@ -5,12 +5,12 @@ describe('http_response.js', () => {
     it('should build a standard 200 OK response', () => {
       const response = buildResponse({});
       // default is 200 OK
-      expect(response).toMatch(/^HTTP\/1\.1 200 OK\r\n/);
+      expect(response).toBe('HTTP/1.1 200 OK\r\n\r\n');
     });
 
     it('should set custom status code and text', () => {
       const response = buildResponse({ statusCode: 404, statusText: 'Not Found' });
-      expect(response).toMatch(/^HTTP\/1\.1 404 Not Found\r\n/);
+      expect(response).toBe('HTTP/1.1 404 Not Found\r\n\r\n');
     });
 
     it('should automatically set Content-Length if body is provided', () => {

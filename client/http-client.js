@@ -1,6 +1,7 @@
 'use strict';
 
 const net = require('net');
+const tls = require('tls');
 
 // ─── URL PARSER ───────────────────────────────────────────────────────────────
 
@@ -15,16 +16,14 @@ const net = require('net');
  * @returns {{ host: string, port: number, path: string }}
  */
 function parseUrl(url) {
-  const match = url.match(/^http:\/\/([^/:]+)(?::(\d+))?(\/.*)?$/);
-
-  if (!match) {
-    throw new Error(`Invalid URL: ${url}`);
-  }
-
+  const isHttps = url.startsWith('https://');
+  const match   = url.match(/^https?:\/\/([^/:]+)(?::(\d+))?(\/.*)?$/);
+  if (!match) throw new Error(`Invalid URL: ${url}`);
   return {
-    host: match[1],
-    port: match[2] ? parseInt(match[2], 10) : 80,
-    path: match[3] || '/',
+    host:    match[1],
+    port:    match[2] ? parseInt(match[2], 10) : (isHttps ? 443 : 80),
+    path:    match[3] || '/',
+    isHttps,
   };
 }
 
@@ -70,13 +69,46 @@ function buildRequest(method, path, host, headers = {}, body = null) {
   return message;
 }
 
+// ─── CHUNKED DECODER ──────────────────────────────────────────────────────────
+
+/**
+ * Decodes a chunked-transfer-encoded body into a plain string.
+ * Format per chunk: "<hex-size>\r\n<data>\r\n" — terminated by "0\r\n\r\n"
+ *
+ * decodeChunked('1a\r\nThis is the first chunk\r\n0\r\n\r\n')
+ *  -> 'This is the first chunk'
+ *
+ * @param {string} raw  — raw body after the header/body separator
+ * @returns {string}    — decoded body
+ */
+function decodeChunked(raw) {
+  let result = '';
+  let i = 0;
+
+  while (i < raw.length) {
+    const crlfPos = raw.indexOf('\r\n', i);   // end of the size line
+    if (crlfPos === -1) break;
+
+    const sizeLine = raw.substring(i, crlfPos).trim();  // e.g. "1a" or "1a;ext"
+    const chunkSize = parseInt(sizeLine, 16);            // parse hex → decimal
+
+    if (isNaN(chunkSize) || chunkSize === 0) break;      // 0 chunk = end of body
+
+    const chunkStart = crlfPos + 2;                      // skip \r\n after size
+    result += raw.substring(chunkStart, chunkStart + chunkSize);
+    i = chunkStart + chunkSize + 2;                      // skip chunk data + trailing \r\n
+  }
+
+  return result;
+}
+
 // ─── RESPONSE PARSER ──────────────────────────────────────────────────────────
 
 function parseResponse(rawResponse) {
   const headerEnd = rawResponse.indexOf('\r\n\r\n');
 
   const rawHeaders = rawResponse.substring(0, headerEnd);
-  const body       = rawResponse.substring(headerEnd + 4);
+  let body         = rawResponse.substring(headerEnd + 4);  // let en vez de const
 
   const lines = rawHeaders.split('\r\n');
 
@@ -97,6 +129,11 @@ function parseResponse(rawResponse) {
     }
   }
 
+  // decode chunked body if server used Transfer-Encoding: chunked
+  if (headers['transfer-encoding'] === 'chunked') {
+    body = decodeChunked(body);
+  }
+
   return { statusCode, statusText, headers, body };
 }
 
@@ -104,12 +141,12 @@ function parseResponse(rawResponse) {
 
 function request({ method, url, headers = {}, body = null }) {
   return new Promise((resolve, reject) => {
-    const { host, port, path } = parseUrl(url);
+    const { host, port, path, isHttps } = parseUrl(url);  // ← añadir isHttps al destructuring
     const message = buildRequest(method, path, host, headers, body);
 
-    const socket = net.createConnection({ port, host }, () => { 
-      socket.write(message);
-    });
+    const socket = isHttps
+      ? tls.connect({ port, host, servername: host }, () => socket.write(message))
+      : net.createConnection({ port, host }, () => socket.write(message));
 
     let rawResponse = '';
  
@@ -155,5 +192,8 @@ function request({ method, url, headers = {}, body = null }) {
     });
   });
 }
+
+
+
 
 module.exports = { request, parseUrl, buildRequest, parseResponse };
