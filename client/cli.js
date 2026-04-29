@@ -49,6 +49,12 @@ async function main() {
   console.log('║  Write "exit" in the URL to quit     ║');
   console.log('╚══════════════════════════════════════╝\n');
 
+  // Preguntar API key una sola vez al arrancar 
+  const apiKey = await prompt('API key (leave empty if server requires none): ');
+  if (apiKey.length > 0) {
+    console.log(`[*] API key set — will be sent automatically as x-api-key on every request.\n`);
+  }
+
   let requestCount = 0;
 
   while (true) {
@@ -64,6 +70,12 @@ async function main() {
     const rawBody = await prompt('JSON body (leave empty if none): ');
 
     const headers = {};
+
+    //  inyectar la API key automáticamente si está configurada 
+    if (apiKey.length > 0) {
+      headers['x-api-key'] = apiKey;
+    }
+
     if (rawHdrs.length > 0) {
       for (const pair of rawHdrs.split(',')) {
         const idx = pair.indexOf(':'); // indexOf instead of split to avoid issues with values containing ':' (tokens, URLs)
