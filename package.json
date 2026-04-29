@@ -6,7 +6,7 @@
   "scripts": {
     "start:server": "node server/index.js",
     "dev:server": "node server/index.js --port 3000",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "keywords": [
     "http",
@@ -15,5 +15,7 @@
   ],
   "author": "",
   "license": "ISC",
-  "dependencies": {}
+  "devDependencies": {
+    "jest": "^30.3.0"
+  }
 }
