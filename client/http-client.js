@@ -1,6 +1,7 @@
 'use strict';
 
 const net = require('net');
+const tls = require('tls');
 
 // ─── URL PARSER ───────────────────────────────────────────────────────────────
 
@@ -15,16 +16,14 @@ const net = require('net');
  * @returns {{ host: string, port: number, path: string }}
  */
 function parseUrl(url) {
-  const match = url.match(/^http:\/\/([^/:]+)(?::(\d+))?(\/.*)?$/);
-
-  if (!match) {
-    throw new Error(`Invalid URL: ${url}`);
-  }
-
+  const isHttps = url.startsWith('https://');
+  const match   = url.match(/^https?:\/\/([^/:]+)(?::(\d+))?(\/.*)?$/);
+  if (!match) throw new Error(`Invalid URL: ${url}`);
   return {
-    host: match[1],
-    port: match[2] ? parseInt(match[2], 10) : 80,
-    path: match[3] || '/',
+    host:    match[1],
+    port:    match[2] ? parseInt(match[2], 10) : (isHttps ? 443 : 80),
+    path:    match[3] || '/',
+    isHttps,
   };
 }
 
@@ -142,12 +141,12 @@ function parseResponse(rawResponse) {
 
 function request({ method, url, headers = {}, body = null }) {
   return new Promise((resolve, reject) => {
-    const { host, port, path } = parseUrl(url);
+    const { host, port, path, isHttps } = parseUrl(url);  // ← añadir isHttps al destructuring
     const message = buildRequest(method, path, host, headers, body);
 
-    const socket = net.createConnection({ port, host }, () => { 
-      socket.write(message);
-    });
+    const socket = isHttps
+      ? tls.connect({ port, host, servername: host }, () => socket.write(message))
+      : net.createConnection({ port, host }, () => socket.write(message));
 
     let rawResponse = '';
  
