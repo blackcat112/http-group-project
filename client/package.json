@@ -1,0 +1,12 @@
+{
+    "name": "http-client",
+    "version": "1.0.0",
+    "description": "HTTP/1.1 client built on raw TCP sockets",
+    "main": "http-client.js",
+    "scripts": {
+      "start": "node cli.js"
+    },
+    "engines": {
+      "node": ">=18.0.0"
+    }
+  }
