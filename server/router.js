@@ -1,6 +1,17 @@
-const { buildResponse } = require('./http_response');
+const { buildResponse, buildJSONResponse, build404NotFound, build400BadRequest } = require('./http_response');
 const fs = require('fs');
 const path = require('path');
+
+const mimeTypes = {
+    '.html': 'text/html',
+    '.css': 'text/css',
+    '.js': 'application/javascript',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.json': 'application/json',
+    '.ico': 'image/x-icon'
+};
 
 const routes = {
     'GET': {},
@@ -74,37 +85,61 @@ function matchRoute(method, path) {
  * @param {*} req 
  * @returns 
  */
-function handleRequest(req) {
-    const { method, path } = req;
+async function handleRequest(req) {
+    const { method, path: reqPath } = req;
 
-    console.log(`[Router] Buscando handler para ${method} ${path}`);
+    console.log(`[Router] Buscando handler para ${method} ${reqPath}`);
+
+    // Middleware global en crudo: Comprobar errores de parseo (ej: JSON malformado)
+    if (req.bodyError) {
+        return build400BadRequest(req.bodyError);
+    }
 
     // Middleware global en crudo: Comprobar API Key si el servidor requiere autenticación
     if (globalApiKey) {
         if (req.headers['x-api-key'] !== globalApiKey) {
             console.log(`[Router] Bloqueando petición sin API Key válida.`);
-            return buildResponse({
-                statusCode: 401,
-                statusText: 'Unauthorized',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ error: 'Acceso denegado. API Key inválida o inexistente en cabecera x-api-key.' })
-            });
+            return buildJSONResponse(401, 'Unauthorized', { error: 'Acceso denegado. API Key inválida o inexistente en cabecera x-api-key.' });
         }
     }
 
-    const match = matchRoute(method, path);
+    const match = matchRoute(method, reqPath);
     if (match) {
         req.params = match.params;
-        return match.handler(req);
+        return await match.handler(req);
     }
 
-    // Si la ruta no existe, devolvemos un 404
-    return buildResponse({
-        statusCode: 404,
-        statusText: 'Not Found',
-        headers: { 'Content-Type': 'text/plain' },
-        body: '404 - Ruta no encontrada en el servidor.\n'
-    });
+    // Si no es una ruta registrada de la API, intentamos servir un archivo estático
+    if (method === 'GET') {
+        // Por defecto, servir index.html en la raíz estática
+        const safePath = reqPath === '/web' ? '/index.html' : reqPath;
+        // Normalizamos para evitar ataques de Directory Traversal (ej: ../../etc/passwd)
+        const normalizedPath = path.normalize(safePath).replace(/^(\.\.(\/|\\|$))+/, '');
+        const filePath = path.join(__dirname, '..', 'public', normalizedPath);
+
+        try {
+            const stat = await fs.promises.stat(filePath);
+            if (stat.isFile()) {
+                const extname = path.extname(filePath).toLowerCase();
+                const contentType = mimeTypes[extname] || 'application/octet-stream';
+                
+                // Leemos como Buffer asíncrono para soportar binarios nativamente
+                const fileContents = await fs.promises.readFile(filePath);
+                
+                return buildResponse({
+                    statusCode: 200,
+                    statusText: 'OK',
+                    headers: { 'Content-Type': contentType },
+                    body: fileContents
+                });
+            }
+        } catch (error) {
+            // El archivo no existe, dejamos que pase al 404
+        }
+    }
+
+    // Si la ruta no existe y no es estático, devolvemos un 404
+    return build404NotFound('Ruta no encontrada en el servidor');
 }
 
 // ==========================================
@@ -112,12 +147,7 @@ function handleRequest(req) {
 // ==========================================
 
 registerRoute('GET', '/', (req) => {
-    return buildResponse({
-        statusCode: 200,
-        statusText: 'OK',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: "¡Hola Mundo desde el Servidor TCP crudo!" })
-    });
+    return buildJSONResponse(200, 'OK', { message: "¡Hola Mundo desde el Servidor TCP crudo!" });
 });
 
 registerRoute('GET', '/status', (req) => {
@@ -129,25 +159,26 @@ registerRoute('GET', '/status', (req) => {
     });
 });
 
-registerRoute('GET', '/index.html', (req) => {
-    try {
-        const filePath = path.join(__dirname, '..', 'public', 'index.html');
-        const fileContents = fs.readFileSync(filePath, 'utf8');
-        return buildResponse({
-            statusCode: 200,
-            statusText: 'OK',
-            headers: { 'Content-Type': 'text/html' },
-            body: fileContents
-        });
-    } catch (error) {
-        return buildResponse({
-            statusCode: 404,
-            statusText: 'Not Found',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ error: 'Archivo estático no encontrado' })
-        });
+registerRoute('GET', '/test-cookie', (req) => {
+    const hasVisited = req.cookies && req.cookies['visited'];
+    
+    let message = "Bienvenido por primera vez. Te hemos asignado una cookie.";
+    if (hasVisited) {
+        message = "¡Qué bueno verte de nuevo! He leído tu cookie.";
     }
+
+    return buildResponse({
+        statusCode: 200,
+        statusText: 'OK',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Set-Cookie': ['visited=true; Path=/; Max-Age=3600']
+        },
+        body: JSON.stringify({ message, cookiesRecibidas: req.cookies })
+    });
 });
+
+
 
 // ==========================================
 // Base de datos en memoria (CRUD Perros)
@@ -160,12 +191,7 @@ let nextDogId = 3;
 
 registerRoute('GET', '/dogs', (req) => {
     // Listar todos los recursos
-    return buildResponse({
-        statusCode: 200,
-        statusText: 'OK',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dogs)
-    });
+    return buildJSONResponse(200, 'OK', dogs);
 });
 
 registerRoute('GET', '/dogs/:id', (req) => {
@@ -173,20 +199,10 @@ registerRoute('GET', '/dogs/:id', (req) => {
     const dog = dogs.find((item) => item.id === id);
 
     if (!dog) {
-        return buildResponse({
-            statusCode: 404,
-            statusText: 'Not Found',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ error: 'Perro no encontrado' })
-        });
+        return build404NotFound('Perro no encontrado');
     }
 
-    return buildResponse({
-        statusCode: 200,
-        statusText: 'OK',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dog)
-    });
+    return buildJSONResponse(200, 'OK', dog);
 });
 
 registerRoute('PUT', '/dogs/:id', (req) => {
@@ -194,36 +210,19 @@ registerRoute('PUT', '/dogs/:id', (req) => {
     const dogIndex = dogs.findIndex((item) => item.id === id);
 
     if (dogIndex === -1) {
-        return buildResponse({
-            statusCode: 404,
-            statusText: 'Not Found',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ error: 'Perro no encontrado' })
-        });
+        return build404NotFound('Perro no encontrado');
     }
 
-    let updatedData;
-    try {
-        updatedData = JSON.parse(req.body);
-    } catch (e) {
-        return buildResponse({
-            statusCode: 400,
-            statusText: 'Bad Request',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ error: 'JSON malformado' })
-        });
+    if (typeof req.body !== 'object' || req.body === null) {
+        return build400BadRequest('Se esperaba un objeto JSON válido en el body');
     }
+    const updatedData = req.body;
 
     const existingDog = dogs[dogIndex];
     const updatedDog = Object.assign({}, existingDog, updatedData, { id: existingDog.id });
     dogs[dogIndex] = updatedDog;
 
-    return buildResponse({
-        statusCode: 200,
-        statusText: 'OK',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedDog)
-    });
+    return buildJSONResponse(200, 'OK', updatedDog);
 });
 
 registerRoute('DELETE', '/dogs/:id', (req) => {
@@ -231,12 +230,7 @@ registerRoute('DELETE', '/dogs/:id', (req) => {
     const dogIndex = dogs.findIndex((item) => item.id === id);
 
     if (dogIndex === -1) {
-        return buildResponse({
-            statusCode: 404,
-            statusText: 'Not Found',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ error: 'Perro no encontrado' })
-        });
+        return build404NotFound('Perro no encontrado');
     }
 
     dogs.splice(dogIndex, 1);
@@ -244,34 +238,22 @@ registerRoute('DELETE', '/dogs/:id', (req) => {
     return buildResponse({
         statusCode: 204,
         statusText: 'No Content',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {},
         body: ''
     });
 });
 
 registerRoute('POST', '/dogs', (req) => {
-    let newDog;
-    try {
-        newDog = JSON.parse(req.body);
-    } catch (e) {
-        return buildResponse({
-            statusCode: 400,
-            statusText: 'Bad Request',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ error: "El cuerpo de la petición debe ser un JSON válido" })
-        });
+    if (typeof req.body !== 'object' || req.body === null) {
+        return build400BadRequest('Se esperaba un objeto JSON válido en el body');
     }
+    const newDog = req.body;
 
     // Le asignamos el próximo id disponible y lo guardamos
     newDog.id = nextDogId++;
     dogs.push(newDog);
 
-    return buildResponse({
-        statusCode: 201,
-        statusText: 'Created',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newDog)
-    });
+    return buildJSONResponse(201, 'Created', newDog);
 });
 
 module.exports = { registerRoute, handleRequest, setApiKey };

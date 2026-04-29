@@ -34,7 +34,7 @@ function startServer(port) {
         // Usamos un Buffer auténtico de Node por si luego hay que parsear archivos binarios o imágenes.
         let buffer = Buffer.alloc(0);
 
-        socket.on('data', (chunk) => {
+        socket.on('data', async (chunk) => {
             // Concatenamos el nuevo trozo (fragmento TCP) que nos acaba de entrar al que ya teníamos
             buffer = Buffer.concat([buffer, chunk]);
 
@@ -67,11 +67,11 @@ function startServer(port) {
                 // Le pasamos la tijera al buffer: quitamos la petición actual para seguir escuchando
                 buffer = buffer.subarray(requestSize);
 
-                try {
-                    const reqObj = parseRequest(fullRequestBuffer.toString('utf8'));
-                    const resString = handleRequest(reqObj);
-                    
-                    socket.write(resString);
+                    try {
+                        const reqObj = parseRequest(fullRequestBuffer.toString('utf8'));
+                        const resString = await handleRequest(reqObj);
+                        
+                        socket.write(resString);
                     // Mantenemos el socket abierto por defecto para soportar HTTP/1.1 (Keep-Alive)
                 } catch (err) {
                     console.error("[TCP Exception] Error parseando request:", err);

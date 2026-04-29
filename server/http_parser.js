@@ -16,7 +16,29 @@ function parseRequest(rawData) {
     }
 
     const lines = rawHeaders.split('\r\n');
-    const [method, path, version] = lines[0].split(' ');
+    const [method, rawPath = '/', version = 'HTTP/1.1'] = lines[0].split(' ');
+    
+    let path = rawPath;
+    let query = {};
+    
+    const queryIndex = rawPath.indexOf('?');
+    if (queryIndex !== -1) {
+        path = rawPath.substring(0, queryIndex);
+        const queryString = rawPath.substring(queryIndex + 1);
+        
+        queryString.split('&').forEach(pair => {
+            const [k, v] = pair.split('=');
+            if (k) {
+                query[decodeURIComponent(k)] = decodeURIComponent(v || '');
+            }
+        });
+    }
+
+    try {
+        path = decodeURI(path);
+    } catch (e) {
+        // Ignorar si hay una secuencia malformada
+    }
     
     const headers = {};
     for (let i = 1; i < lines.length; i++) {
@@ -30,12 +52,50 @@ function parseRequest(rawData) {
         }
     }
 
+    let cookies = {};
+    if (headers['cookie']) {
+        headers['cookie'].split(';').forEach(cookieStr => {
+            const parts = cookieStr.split('=');
+            if (parts.length >= 2) {
+                const name = parts[0].trim();
+                const val = parts.slice(1).join('=').trim();
+                cookies[name] = decodeURIComponent(val);
+            }
+        });
+    }
+
+    let parsedBody = body;
+    let bodyError = null;
+
+    if (body && headers['content-type']) {
+        const contentType = headers['content-type'];
+        if (contentType.includes('application/json')) {
+            try {
+                parsedBody = JSON.parse(body);
+            } catch (e) {
+                bodyError = 'JSON malformado';
+            }
+        } else if (contentType.includes('application/x-www-form-urlencoded')) {
+            parsedBody = {};
+            body.split('&').forEach(pair => {
+                const [key, value] = pair.split('=');
+                if (key) {
+                    parsedBody[decodeURIComponent(key)] = decodeURIComponent(value || '');
+                }
+            });
+        }
+    }
+
     return {
         method: method || 'GET',
         path: path || '/',
+        query,
+        cookies,
         version: version || 'HTTP/1.1',
         headers,
-        body
+        body: parsedBody,
+        rawBody: body,
+        bodyError
     };
 }
 
