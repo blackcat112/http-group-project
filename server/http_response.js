@@ -28,7 +28,13 @@ function buildResponse({ statusCode = 200, statusText = 'OK', headers = {}, body
     }
 
     for (const [key, value] of Object.entries(headers)) {
-        responseText += `${key}: ${value}\r\n`;
+        if (Array.isArray(value)) {
+            for (const v of value) {
+                responseText += `${key}: ${v}\r\n`;
+            }
+        } else {
+            responseText += `${key}: ${value}\r\n`;
+        }
     }
 
     // Cabecera vacía indica el fin de los headers y el inicio del body

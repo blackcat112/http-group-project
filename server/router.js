@@ -159,6 +159,25 @@ registerRoute('GET', '/status', (req) => {
     });
 });
 
+registerRoute('GET', '/test-cookie', (req) => {
+    const hasVisited = req.cookies && req.cookies['visited'];
+    
+    let message = "Bienvenido por primera vez. Te hemos asignado una cookie.";
+    if (hasVisited) {
+        message = "¡Qué bueno verte de nuevo! He leído tu cookie.";
+    }
+
+    return buildResponse({
+        statusCode: 200,
+        statusText: 'OK',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Set-Cookie': ['visited=true; Path=/; Max-Age=3600']
+        },
+        body: JSON.stringify({ message, cookiesRecibidas: req.cookies })
+    });
+});
+
 
 
 // ==========================================

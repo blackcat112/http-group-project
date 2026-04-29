@@ -52,6 +52,18 @@ function parseRequest(rawData) {
         }
     }
 
+    let cookies = {};
+    if (headers['cookie']) {
+        headers['cookie'].split(';').forEach(cookieStr => {
+            const parts = cookieStr.split('=');
+            if (parts.length >= 2) {
+                const name = parts[0].trim();
+                const val = parts.slice(1).join('=').trim();
+                cookies[name] = decodeURIComponent(val);
+            }
+        });
+    }
+
     let parsedBody = body;
     let bodyError = null;
 
@@ -78,6 +90,7 @@ function parseRequest(rawData) {
         method: method || 'GET',
         path: path || '/',
         query,
+        cookies,
         version: version || 'HTTP/1.1',
         headers,
         body: parsedBody,
