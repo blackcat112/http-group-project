@@ -2,6 +2,17 @@ const { buildResponse, buildJSONResponse, build404NotFound, build400BadRequest }
 const fs = require('fs');
 const path = require('path');
 
+const mimeTypes = {
+    '.html': 'text/html',
+    '.css': 'text/css',
+    '.js': 'application/javascript',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.json': 'application/json',
+    '.ico': 'image/x-icon'
+};
+
 const routes = {
     'GET': {},
     'POST': {}
@@ -74,10 +85,10 @@ function matchRoute(method, path) {
  * @param {*} req 
  * @returns 
  */
-function handleRequest(req) {
-    const { method, path } = req;
+async function handleRequest(req) {
+    const { method, path: reqPath } = req;
 
-    console.log(`[Router] Buscando handler para ${method} ${path}`);
+    console.log(`[Router] Buscando handler para ${method} ${reqPath}`);
 
     // Middleware global en crudo: Comprobar errores de parseo (ej: JSON malformado)
     if (req.bodyError) {
@@ -92,13 +103,42 @@ function handleRequest(req) {
         }
     }
 
-    const match = matchRoute(method, path);
+    const match = matchRoute(method, reqPath);
     if (match) {
         req.params = match.params;
-        return match.handler(req);
+        return await match.handler(req);
     }
 
-    // Si la ruta no existe, devolvemos un 404
+    // Si no es una ruta registrada de la API, intentamos servir un archivo estático
+    if (method === 'GET') {
+        // Por defecto, servir index.html en la raíz estática
+        const safePath = reqPath === '/web' ? '/index.html' : reqPath;
+        // Normalizamos para evitar ataques de Directory Traversal (ej: ../../etc/passwd)
+        const normalizedPath = path.normalize(safePath).replace(/^(\.\.(\/|\\|$))+/, '');
+        const filePath = path.join(__dirname, '..', 'public', normalizedPath);
+
+        try {
+            const stat = await fs.promises.stat(filePath);
+            if (stat.isFile()) {
+                const extname = path.extname(filePath).toLowerCase();
+                const contentType = mimeTypes[extname] || 'application/octet-stream';
+                
+                // Leemos como Buffer asíncrono para soportar binarios nativamente
+                const fileContents = await fs.promises.readFile(filePath);
+                
+                return buildResponse({
+                    statusCode: 200,
+                    statusText: 'OK',
+                    headers: { 'Content-Type': contentType },
+                    body: fileContents
+                });
+            }
+        } catch (error) {
+            // El archivo no existe, dejamos que pase al 404
+        }
+    }
+
+    // Si la ruta no existe y no es estático, devolvemos un 404
     return build404NotFound('Ruta no encontrada en el servidor');
 }
 
@@ -119,20 +159,7 @@ registerRoute('GET', '/status', (req) => {
     });
 });
 
-registerRoute('GET', '/index.html', (req) => {
-    try {
-        const filePath = path.join(__dirname, '..', 'public', 'index.html');
-        const fileContents = fs.readFileSync(filePath, 'utf8');
-        return buildResponse({
-            statusCode: 200,
-            statusText: 'OK',
-            headers: { 'Content-Type': 'text/html' },
-            body: fileContents
-        });
-    } catch (error) {
-        return build404NotFound('Archivo estático no encontrado');
-    }
-});
+
 
 // ==========================================
 // Base de datos en memoria (CRUD Perros)

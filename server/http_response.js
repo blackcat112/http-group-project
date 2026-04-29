@@ -15,10 +15,16 @@ function buildResponse({ statusCode = 200, statusText = 'OK', headers = {}, body
         headers['Date'] = new Date().toUTCString();
     }
 
-    // Si hay body, siempre es buena práctica mandar el Content-Length
-    if (body.length > 0 && !headers['content-length'] && !headers['Content-Length']) {
-        // En un caso real usaríamos Buffer.byteLength(body) si puede haber unicode
-        headers['Content-Length'] = Buffer.byteLength(body, 'utf8');
+    // Calculamos el Content-Length real
+    let contentLength = 0;
+    if (Buffer.isBuffer(body)) {
+        contentLength = body.length;
+    } else if (body !== undefined && body !== null && body !== '') {
+        contentLength = Buffer.byteLength(body, 'utf8');
+    }
+
+    if (contentLength > 0 && !headers['content-length'] && !headers['Content-Length']) {
+        headers['Content-Length'] = contentLength;
     }
 
     for (const [key, value] of Object.entries(headers)) {
@@ -28,11 +34,12 @@ function buildResponse({ statusCode = 200, statusText = 'OK', headers = {}, body
     // Cabecera vacía indica el fin de los headers y el inicio del body
     responseText += '\r\n';
     
-    if (body) {
-        responseText += body;
+    // Si el body es binario (imagen), devolvemos un Buffer completo
+    if (Buffer.isBuffer(body)) {
+        return Buffer.concat([Buffer.from(responseText, 'utf8'), body]);
+    } else {
+        return responseText + (body || '');
     }
-
-    return responseText;
 }
 
 function buildJSONResponse(statusCode, statusText, data) {
