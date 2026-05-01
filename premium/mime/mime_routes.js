@@ -1,6 +1,6 @@
 const path = require("path");
-const MimeHandler = require("./MimeHandler");
-const { buildMimeResponse } = require("./MimeResponse");
+const MimeHandler = require("./mime_handler");
+const { buildMimeResponse } = require("./mime_response");
 
 function registerMimeRoutes(registerRouteFunc) {
   registerRouteFunc("GET", "/premium/assets/:filename", (req) => {
