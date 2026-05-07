@@ -1,7 +1,7 @@
 const { startServer } = require('./tcp_server');
 
 const { setApiKey, registerRoute } = require('./router');
-const { registerMimeRoutes } = require('./premium/mime/MimeRoutes');
+const { registerMimeRoutes } = require('../premium/mime/MimeRoutes');
 
 // Leemos argumentos de linea de comandos para extraer --port y --api-key
 const args = process.argv.slice(2);
