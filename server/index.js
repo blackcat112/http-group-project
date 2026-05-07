@@ -1,7 +1,6 @@
 const { startServer } = require('./tcp_server');
 
-const { setApiKey } = require('./router');
-
+const { setApiKey, registerRoute } = require('./router');
 // Leemos argumentos de linea de comandos para extraer --port y --api-key
 const args = process.argv.slice(2);
 let port = 3000; // default
@@ -20,6 +19,8 @@ if (apiKey) {
     setApiKey(apiKey);
     console.log(`[*] Modo Seguro activado. API Key configurada: ${apiKey}`);
 }
+
+registerMimeRoutes(registerRoute);
 
 // Arrancar motor principal TCP y guardar contexto para el apagado
 const tcpContext = startServer(port);
