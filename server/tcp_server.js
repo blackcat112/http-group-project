@@ -23,7 +23,7 @@ function handleSocket(socket) {
     // Destroy idle sockets after 10 s
     socket.setTimeout(10000);
     socket.on('timeout', () => {
-        console.log(`[!] Timeout alcanzado. Destruyendo socket zombi...`);
+        console.log(`[!] Timeout reached. Destroying idle socket...`);
         socket.destroy();
     });
 
@@ -49,7 +49,7 @@ function handleSocket(socket) {
 
             // Wait until the full request (headers + body) is buffered
             if (buffer.length < requestSize) {
-                console.log(`[~] Fragmento TCP recibido. Faltan datos del Body... Esperando...`);
+                console.log(`[~] Incomplete request buffered. Waiting for more data...`);
                 break;
             }
 
@@ -62,7 +62,7 @@ function handleSocket(socket) {
 
                 socket.write(resString);
             } catch (err) {
-                console.error("[TCP Exception] Error parseando request:", err);
+                console.error('[TCP Exception] Failed to parse request:', err);
                 socket.write('HTTP/1.1 400 Bad Request\r\n\r\nBad Request\n');
                 socket.end();
                 break;
@@ -72,9 +72,9 @@ function handleSocket(socket) {
 
     socket.on('error', (err) => {
         if (err.code === 'ECONNRESET') {
-            console.log(`[!] Omitiendo error de red: El cliente cerró la conexión HTTP de forma violenta.`);
+            console.log(`[!] Ignoring network error: client closed the connection abruptly.`);
         } else {
-            console.error('[TCP Error Crítico]:', err.message);
+            console.error('[TCP Critical Error]:', err.message);
         }
     });
 
@@ -82,7 +82,7 @@ function handleSocket(socket) {
     const cleanUp = () => {
         if (activeSockets.has(socket)) {
             activeSockets.delete(socket);
-            console.log(`[-] Cliente desconectado. Total activos: ${activeSockets.size}`);
+            console.log(`[-] Client disconnected. Total clients: ${activeSockets.size}`);
         }
     };
 
@@ -101,7 +101,7 @@ function startServer(port, tlsStack = null) {
     const server = net.createServer((rawSocket) => {
         if (tlsStack) {
             tlsStack.upgrade(rawSocket, (secureSocket) => {
-                console.log('[TLS] Handshake completado. Socket seguro listo.');
+                console.log('[TLS] Handshake complete. Secure socket ready.');
                 handleSocket(secureSocket);
             });
             rawSocket.on('error', (err) => {
@@ -113,10 +113,10 @@ function startServer(port, tlsStack = null) {
     });
 
     server.listen(port, () => {
-        console.log(`[+] Servidor ${protocol} escuchando en el puerto ${port}`);
+        console.log(`[+] ${protocol} server listening on port ${port}`);
         if (tlsStack) {
-            console.log(`[+] Conecta con: https://localhost:${port}/`);
-            console.log(`[+] Prueba con curl: curl -k https://localhost:${port}/`);
+            console.log(`[+] Connect at: https://localhost:${port}/`);
+            console.log(`[+] Test with: curl -k https://localhost:${port}/`);
         }
     });
 
