@@ -6,11 +6,11 @@ const tls = require('tls');
 // ─── URL PARSER ───────────────────────────────────────────────────────────────
 
 /**
- * Descompone una URL en sus partes necesarias para abrir el socket TCP
- * Soporta http:// con host, puerto opcional y path
- *
+ * Parses a URL string and extracts the host, port, path, and protocol (http/https)
+ * 
  * parseUrl('http://localhost:3000/cats/1')
- *  -> { host: 'localhost', port: 3000, path: '/cats/1' }
+ * -> { host: 'localhost', port: 3000, path: '/cats/1' }
+ * Soporta http:// con host, puerto opcional y path
  *
  * @param {string} url
  * @returns {{ host: string, port: number, path: string }}
@@ -30,8 +30,8 @@ function parseUrl(url) {
 // ─── MESSAGE BUILDER ──────────────────────────────────────────────────────────
 
 /**
- * Construye el string HTTP/1.1 completo listo para enviar por el socket TCP
- * Añade automaticamente Host y Content-Length si hay body
+ * Builds the full HTTP/1.1 request string ready to be sent over a TCP socket
+ * Automatically adds Host and Content-Length headers if body is present
  *
  * @param {string} method
  * @param {string} path
@@ -108,7 +108,7 @@ function parseResponse(rawResponse) {
   const headerEnd = rawResponse.indexOf('\r\n\r\n');
 
   const rawHeaders = rawResponse.substring(0, headerEnd);
-  let body         = rawResponse.substring(headerEnd + 4);  // let en vez de const
+  let body         = rawResponse.substring(headerEnd + 4); 
 
   const lines = rawHeaders.split('\r\n');
 
@@ -141,7 +141,7 @@ function parseResponse(rawResponse) {
 
 function request({ method, url, headers = {}, body = null }) {
   return new Promise((resolve, reject) => {
-    const { host, port, path, isHttps } = parseUrl(url);  // ← añadir isHttps al destructuring
+    const { host, port, path, isHttps } = parseUrl(url);  // add isHttps in the destructuring assignment
     const message = buildRequest(method, path, host, headers, body);
 
     const socket = isHttps
@@ -151,7 +151,7 @@ function request({ method, url, headers = {}, body = null }) {
     let rawResponse = '';
  
     socket.on('data', (chunk) => { 
-      rawResponse += chunk.toString('utf8'); // Acumula los datos recibidos en un string hasta que se complete la respuesta
+      rawResponse += chunk.toString('utf8'); // accumulate the received data into a string until the response is complete
 
       const headerEnd = rawResponse.indexOf('\r\n\r\n');
       if (headerEnd === -1) return;
@@ -165,8 +165,8 @@ function request({ method, url, headers = {}, body = null }) {
           rawResponse.substring(headerEnd + 4), 'utf8'
         );
 
-        if (bodyReceived >= contentLength) { // si ya recibimos todo el body esperado, podemos cerrar el socket y resolver
-          socket.destroy(); // destroy no esperamos al servirdor nos da igual
+        if (bodyReceived >= contentLength) { // if we have received the entire expected body, we can close the socket and resolve
+          socket.destroy(); // destroy we don't wait for the server we don't care
           resolve(parseResponse(rawResponse));
         }
       } else {
@@ -175,7 +175,7 @@ function request({ method, url, headers = {}, body = null }) {
       }
     });
 
-    socket.on('end', () => { // por ejemplo si conection: close el servidor cierra la conexión después de enviar la respuesta
+    socket.on('end', () => { // for example, if "Connection: close", the server closes the connection after sending the response
       if (rawResponse.length > 0) {
         resolve(parseResponse(rawResponse));
       }
