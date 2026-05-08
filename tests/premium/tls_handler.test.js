@@ -86,7 +86,7 @@ describe('tls_handler.js – createTlsUpgrader', () => {
     expect(mockTlsSocket.setTimeout).toHaveBeenCalledWith(5000);
   });
 
-  it('should call onSecure callback and reset timeout when secureConnect fires', (done) => {
+  it('should call onSecure callback and reset timeout when secure fires', (done) => {
     const mockTlsSocket = new EventEmitter();
     mockTlsSocket.setTimeout = jest.fn();
     tls.TLSSocket = jest.fn().mockReturnValue(mockTlsSocket);
@@ -104,7 +104,7 @@ describe('tls_handler.js – createTlsUpgrader', () => {
     });
 
     // Simulamos que el handshake TLS ha terminado
-    mockTlsSocket.emit('secureConnect');
+    mockTlsSocket.emit('secure');
   });
 
   it('should merge secureContext into tlsOptions if provided', () => {
