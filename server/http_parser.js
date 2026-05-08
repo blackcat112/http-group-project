@@ -1,8 +1,8 @@
 /**
- * Parsea el string en crudo HTTP en un objeto usable.
- * Este parser asume que al menos los headers están completos (\r\n\r\n).
- * 
- * @param {string} rawData - Datos HTTP recibidos del socket.
+ * Parses a raw HTTP string into a usable request object.
+ * Assumes at least the headers are complete (\r\n\r\n).
+ *
+ * @param {string} rawData - Raw HTTP data received from the socket.
  * @returns {Object} { method, path, version, headers, body }
  */
 function parseRequest(rawData) {
@@ -37,7 +37,7 @@ function parseRequest(rawData) {
     try {
         path = decodeURI(path);
     } catch (e) {
-        // Ignorar si hay una secuencia malformada
+        // Ignore malformed URI sequences
     }
     
     const headers = {};

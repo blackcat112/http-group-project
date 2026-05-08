@@ -1,21 +1,21 @@
 /**
- * Construye el string de respuesta HTTP para enviarlo al socket TCP.
- * 
- * @param {number} statusCode - P.ej. 200, 404, 500
- * @param {string} statusText - P.ej. 'OK', 'Not Found', 'Internal Server Error'
- * @param {Object} headers - Objeto con cabeceras clave-valor
- * @param {string} body - Contenido opcional de la respuesta
- * @returns {string} String HTTP/1.1 formateado
+ * Builds the HTTP response string to be written to a TCP socket.
+ *
+ * @param {number} statusCode - e.g. 200, 404, 500
+ * @param {string} statusText - e.g. 'OK', 'Not Found', 'Internal Server Error'
+ * @param {Object} headers    - Key-value header object
+ * @param {string} body       - Optional response body
+ * @returns {string|Buffer} Formatted HTTP/1.1 response
  */
 function buildResponse({ statusCode = 200, statusText = 'OK', headers = {}, body = '' }) {
     let responseText = `HTTP/1.1 ${statusCode} ${statusText}\r\n`;
 
-    // Añadimos la cabecera obligatoria Date si no está presente
+    // Inject required Date header if not already present
     if (!headers['Date'] && !headers['date']) {
         headers['Date'] = new Date().toUTCString();
     }
 
-    // Calculamos el Content-Length real
+    // Compute Content-Length from actual body size
     let contentLength = 0;
     if (Buffer.isBuffer(body)) {
         contentLength = body.length;
@@ -37,10 +37,10 @@ function buildResponse({ statusCode = 200, statusText = 'OK', headers = {}, body
         }
     }
 
-    // Cabecera vacía indica el fin de los headers y el inicio del body
+    // Empty line signals end of headers / start of body
     responseText += '\r\n';
     
-    // Si el body es binario (imagen), devolvemos un Buffer completo
+    // Return a full Buffer for binary bodies (e.g. images)
     if (Buffer.isBuffer(body)) {
         return Buffer.concat([Buffer.from(responseText, 'utf8'), body]);
     } else {
