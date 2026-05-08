@@ -21,7 +21,7 @@ const routes = {
 let globalApiKey = null;
 
 /**
- * Registra un handler para un path y un http method dado.
+ * Registers a handler for a given HTTP method and path.
  */
 function registerRoute(method, path, handler) {
     if (!routes[method]) routes[method] = {};
@@ -29,25 +29,25 @@ function registerRoute(method, path, handler) {
 }
 
 /**
- * Establece globalmente la API key del servidor desde el index.js
+ * Sets the global API key from index.js.
  */
 function setApiKey(key) {
     globalApiKey = key;
 }
 
 /**
- * Toma el objeto de request y hace el match con la ruta correspondiente recorriendo las rutas registradas para el método correspondiente, devuelve el response
- * usando el handler adecuado, más el parametro extraído de la ruta, si es que lo hay.
+ * Matches the request method+path against registered routes.
+ * Supports exact and dynamic (parameterized) matching.
  */
 function matchRoute(method, path) {
     if (!routes[method]) return null;
 
-    // Match exacto
+    // Exact match
     if (routes[method][path]) {
         return { handler: routes[method][path], params: {} };
     }
 
-    // Match dinámico: compara segmentos y extrae parámetros, para ver si la ruta coincide con algo.
+    // Dynamic match: compare path segments and extract named params
     const requestSegments = path.split('/').filter(Boolean);
 
     for (const routePath of Object.keys(routes[method])) {
@@ -62,7 +62,7 @@ function matchRoute(method, path) {
             const requestSegment = requestSegments[i];
 
             if (routeSegment.startsWith(':')) {
-                // Captura el valor: /parametro/:id
+                // Capture named param value, e.g. /resource/:id
                 const paramName = routeSegment.slice(1);
                 params[paramName] = requestSegment;
             } else if (routeSegment !== requestSegment) {
@@ -80,25 +80,25 @@ function matchRoute(method, path) {
 }
 
 /**
- * Función principal que maneja la lógica de routing: recibe el request, busca el handler adecuado y devuelve el response. 
- * Si no encuentra ruta, devuelve un 404.
- * @param {*} req 
- * @returns 
+ * Main request handler: matches the request to a route and returns the response.
+ * Falls back to static file serving, then 404.
+ * @param {*} req
+ * @returns
  */
 async function handleRequest(req) {
     const { method, path: reqPath } = req;
 
-    console.log(`[Router] Buscando handler para ${method} ${reqPath}`);
+    console.log(`[Router] ${method} ${reqPath}`);
 
-    // Middleware global en crudo: Comprobar errores de parseo (ej: JSON malformado)
+    // Global middleware: check for body parse errors (e.g. malformed JSON)
     if (req.bodyError) {
         return build400BadRequest(req.bodyError);
     }
 
-    // Middleware global en crudo: Comprobar API Key si el servidor requiere autenticación
+    // Global middleware: validate API key if the server requires authentication
     if (globalApiKey) {
         if (req.headers['x-api-key'] !== globalApiKey) {
-            console.log(`[Router] Bloqueando petición sin API Key válida.`);
+            console.log(`[Router] Blocked: missing or invalid API key.`);
             return buildJSONResponse(401, 'Unauthorized', { error: 'Acceso denegado. API Key inválida o inexistente en cabecera x-api-key.' });
         }
     }
@@ -109,11 +109,11 @@ async function handleRequest(req) {
         return await match.handler(req);
     }
 
-    // Si no es una ruta registrada de la API, intentamos servir un archivo estático
+    // If not an API route, try to serve a static file
     if (method === 'GET') {
-        // Por defecto, servir index.html en la raíz estática
+        // Default to index.html for /web
         const safePath = reqPath === '/web' ? '/index.html' : reqPath;
-        // Normalizamos para evitar ataques de Directory Traversal (ej: ../../etc/passwd)
+        // Normalize to prevent directory traversal attacks (e.g. ../../etc/passwd)
         const normalizedPath = path.normalize(safePath).replace(/^(\.\.(\/|\\|$))+/, '');
         const filePath = path.join(__dirname, '..', 'public', normalizedPath);
 
@@ -123,7 +123,7 @@ async function handleRequest(req) {
                 const extname = path.extname(filePath).toLowerCase();
                 const contentType = mimeTypes[extname] || 'application/octet-stream';
                 
-                // Leemos como Buffer asíncrono para soportar binarios nativamente
+                // Read as async Buffer to support binary files natively
                 const fileContents = await fs.promises.readFile(filePath);
                 
                 return buildResponse({
@@ -134,16 +134,16 @@ async function handleRequest(req) {
                 });
             }
         } catch (error) {
-            // El archivo no existe, dejamos que pase al 404
+            // File not found, fall through to 404
         }
     }
 
-    // Si la ruta no existe y no es estático, devolvemos un 404
+    // Route not found and not a static file: return 404
     return build404NotFound('Ruta no encontrada en el servidor');
 }
 
 // ==========================================
-// Registro de Rutas Iniciales "Hola Mundo"
+// Initial demo routes
 // ==========================================
 
 registerRoute('GET', '/', (req) => {
@@ -181,7 +181,7 @@ registerRoute('GET', '/test-cookie', (req) => {
 
 
 // ==========================================
-// Base de datos en memoria (CRUD Perros)
+// In-memory data store (Dogs CRUD)
 // ==========================================
 let dogs = [
     { id: 1, name: "Hercules", breed: "Mastín", age: 3 },
@@ -190,7 +190,7 @@ let dogs = [
 let nextDogId = 3;
 
 registerRoute('GET', '/dogs', (req) => {
-    // Listar todos los recursos
+    // List all resources
     return buildJSONResponse(200, 'OK', dogs);
 });
 
@@ -249,7 +249,7 @@ registerRoute('POST', '/dogs', (req) => {
     }
     const newDog = req.body;
 
-    // Le asignamos el próximo id disponible y lo guardamos
+    // Assign next available id and store
     newDog.id = nextDogId++;
     dogs.push(newDog);
 

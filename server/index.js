@@ -38,21 +38,21 @@ registerMimeRoutes(registerRoute);
 let tlsStack = null;
 if (useTls) {
     tlsStack = setupTlsStack({ keyPath: tlsKey, certPath: tlsCert });
-    console.log(`[*] TLS activado. Certificado: ${tlsCert}`);
+    console.log(`[*] TLS enabled. Certificate: ${tlsCert}`);
 }
 
 const tcpContext = startServer(port, tlsStack);
 
 
 process.on('SIGINT', () => {
-    console.log('\n[!] Señal SIGINT recibida (Ctrl+C). Preparando apagado...');
+    console.log('\n[!] SIGINT received (Ctrl+C). Shutting down...');
 
     for (const socket of tcpContext.activeSockets) {
         socket.destroy();
     }
 
     tcpContext.server.close(() => {
-        console.log('[+] El sistema se ha apagado sin corrupciones.');
+        console.log('[+] Server shut down cleanly.');
         process.exit(0);
     });
 });

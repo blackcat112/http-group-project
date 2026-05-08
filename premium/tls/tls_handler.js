@@ -22,7 +22,7 @@ function createTlsUpgrader({ tlsOptions = {}, secureContext, handshakeTimeoutMs 
         const secureSocket = new tls.TLSSocket(rawSocket, normalizedTlsOptions);
         secureSocket.setTimeout(handshakeTimeoutMs);
 
-        secureSocket.once('secureConnect', () => {
+        secureSocket.once('secure', () => {
             secureSocket.setTimeout(0);
             if (typeof onSecure === 'function') {
                 onSecure(secureSocket);
