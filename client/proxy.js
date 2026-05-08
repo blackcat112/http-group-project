@@ -5,7 +5,7 @@ const { request } = require('./http-client');
 
 const PROXY_PORT = 4000;
 
-// ─── LEER BODY DE UNA PETICIÓN HTTP ENTRANTE ─────────────────────────────────
+// ─── READ ─────────────────────────────────
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
@@ -20,26 +20,26 @@ function readBody(req) {
 
 const server = http.createServer(async (req, res) => {
 
-  // CORS — permite que gui.html llame a este servidor local
+  // CORS — gui.html can call the local server 
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Preflight OPTIONS que manda el navegador antes de cada POST
+  // Preflight OPTIONS 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
     return;
   }
 
-  // Solo aceptamos POST /send
+  // Only accept POST /send
   if (req.method !== 'POST' || req.url !== '/send') {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Only POST /send is supported' }));
     return;
   }
 
-  // Leer y parsear el JSON que manda la GUI
+  // read the JSON payload from the request body, which should contain { method, url, headers, body }
   let payload;
   try {
     const raw = await readBody(req);
@@ -50,7 +50,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // Usar http-client.js exactamente igual que el CLI
+  // use the http-client's request function to perform the actual HTTP request 
   try {
     const result = await request({
       method:  payload.method  || 'GET',
@@ -60,7 +60,7 @@ const server = http.createServer(async (req, res) => {
     });
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(result));  // devuelve { statusCode, statusText, headers, body }
+    res.end(JSON.stringify(result));  // return the full response (statusCode, statusText, headers, body) back to gui.html
 
   } catch (err) {
     res.writeHead(502, { 'Content-Type': 'application/json' });

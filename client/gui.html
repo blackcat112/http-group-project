@@ -184,7 +184,7 @@
     textarea::placeholder { color: var(--faint); }
     textarea:focus { outline: none; border-color: var(--green); }
 
-    /* API key field — colapsa al guardar */
+    /* API key field — colaps after save */
     .api-key-field { transition: max-height 0.25s ease, opacity 0.2s; overflow: hidden; }
     .api-key-field.hidden { max-height: 0 !important; opacity: 0; pointer-events: none; }
 
@@ -332,7 +332,7 @@
     </div>
     <div class="pb">
 
-      <!-- API KEY — panel izquierdo, se oculta al guardar -->
+      <!-- API KEY — left panel -->
       <div class="api-key-field" id="apiKeyField">
         <div class="fl">API Key <span>(x-api-key — inyectada automáticamente)</span></div>
         <div class="key-row">
@@ -343,7 +343,7 @@
         </div>
       </div>
 
-      <!-- Metodo + URL -->
+      <!-- Method + URL -->
       <div>
         <div class="fl">Method &amp; URL</div>
         <div class="url-row">

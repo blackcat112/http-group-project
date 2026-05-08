@@ -49,7 +49,7 @@ async function main() {
   console.log('║  Write "exit" in the URL to quit     ║');
   console.log('╚══════════════════════════════════════╝\n');
 
-  // Preguntar API key una sola vez al arrancar 
+  // Ask the API key one time before the loop so it can be reused in every request without asking again
   const apiKey = await prompt('API key (leave empty if server requires none): ');
   if (apiKey.length > 0) {
     console.log(`[*] API key set — will be sent automatically as x-api-key on every request.\n`);
@@ -71,7 +71,7 @@ async function main() {
 
     const headers = {};
 
-    //  inyectar la API key automáticamente si está configurada 
+    //  Add the API key header if provided
     if (apiKey.length > 0) {
       headers['x-api-key'] = apiKey;
     }
