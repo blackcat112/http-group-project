@@ -1,3 +1,4 @@
+require('./logger'); // <-- Intercepta los logs para escribirlos en server.log
 const { startServer } = require('./tcp_server');
 const { setApiKey, registerRoute } = require('./router');
 const { registerMimeRoutes } = require('../premium/mime/mime_routes');
