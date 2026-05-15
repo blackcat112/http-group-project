@@ -180,8 +180,9 @@ function request({ method, url, headers = {}, body = null }) {
 
     socket.on("end", () => {
       // for example, if "Connection: close", the server closes the connection after sending the response
-      if (rawResponse.length > 0) {
-        resolve(parseResponse(rawResponse));
+      const rawBuffer = Buffer.concat(responseChunks);
+      if (rawBuffer.length > 0) {
+        resolve(parseResponse(rawBuffer.toString("binary")));
       }
     });
 
