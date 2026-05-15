@@ -195,3 +195,21 @@ Esta sección documenta el progreso en la implementación del cliente HTTP/1.1 d
 
 - Infraestructura para TLS (solo infraestructura, sin implementar en el servidor /server)
 - Unit test automático, tanto para premium como para server
+
+---
+
+## 🏆 Project Achievement Breakdown (6 members)
+
+| Feature | Status | Points |
+| :--- | :---: | :---: |
+| Mandatory Features (REST, Client, etc.) | ✅ Done | +5.0 |
+| Authentication (Login Flow) | ✅ Done | +1.8 |
+| Multimedia Messages (MIME) | ✅ Done | +1.0 |
+| TLS Encryption (Basic) | ✅ Done | +1.0 |
+| Automated Testing (Jest) | ✅ Done | +1.0 |
+| Client GUI | ✅ Done | +1.0 |
+| Advanced HTTP/1.1 (Chunked, Keep-Alive) | ✅ Done | +1.0 |
+| API Key Middleware | ✅ Done | +0.5 |
+| Server Logging System | ✅ Done | +0.5 |
+| Cookie Management | ✅ Done | +0.5 |
+| **Total Accumulated Points** | | **13.3 / 10.0** |
