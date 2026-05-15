@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>http-client // USJ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:       #f4f4f0;
+      --surface:  #ffffff;
+      --surface2: #f0f0ec;
+      --border:   #d4d4cc;
+      --border2:  #b8b8b0;
+      --ink:      #111110;
+      --ink2:     #444440;
+      --muted:    #888880;
+      --faint:    #ccccC4;
+
+      --green:    #008832;
+      --green-lt: #e6f5ec;
+      --green-bdr:#00aa3e;
+      --yellow:   #b86e00;
+      --yellow-lt:#fff8e6;
+      --blue:     #0055cc;
+      --blue-lt:  #e6eeff;
+      --red:      #cc2200;
+      --red-lt:   #fff0ee;
+      --purple:   #7700cc;
+      --purple-lt:#f5eeff;
+
+      --font: 'IBM Plex Mono', monospace;
+      --bw:   1.5px;
+      --r:    3px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-font-smoothing: antialiased; }
+
+    body {
+      font-family: var(--font);
+      font-size: 13px;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1.25rem; height: 46px;
+      border-bottom: var(--bw) solid var(--border2);
+      background: var(--surface); flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 13px; font-weight: 700; letter-spacing: 0.03em; color: var(--ink);
+    }
+    .cursor {
+      display: inline-block; width: 8px; height: 14px;
+      background: var(--green);
+      animation: blink 1.1s step-end infinite;
+      vertical-align: -2px; border-radius: 1px;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .cursor { animation: none; } }
+
+    .brand-sub { color: var(--muted); font-weight: 400; font-size: 11px; }
+    .topbar-right { display: flex; align-items: center; gap: 0.6rem; }
+
+    .proxy-pill {
+      display: flex; align-items: center; gap: 0.35rem;
+      padding: 3px 9px; border: var(--bw) solid var(--border2);
+      font-size: 11px; color: var(--muted);
+      background: var(--surface2); border-radius: var(--r);
+      letter-spacing: 0.04em;
+    }
+    .pdot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); transition: background 0.3s; }
+    .pdot.on { background: var(--green); }
+
+    .key-badge {
+      display: none; align-items: center; gap: 0.35rem;
+      padding: 3px 9px;
+      border: var(--bw) solid var(--green-bdr);
+      font-size: 11px; color: var(--green);
+      background: var(--green-lt); border-radius: var(--r);
+      letter-spacing: 0.04em; cursor: pointer;
+      transition: background 0.1s;
+    }
+    .key-badge:hover { background: #d0eddc; }
+    .key-badge.visible { display: flex; }
+    .key-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+    .workspace {
+      display: grid; grid-template-columns: 340px 1fr;
+      flex: 1; min-height: 0; height: calc(100dvh - 46px);
+    }
+
+    .panel { display: flex; flex-direction: column; overflow: hidden; }
+    .panel-left { border-right: var(--bw) solid var(--border2); background: var(--surface); }
+
+    .ph {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1rem; height: 38px;
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .ph-label {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+    }
+    .ph-meta { font-size: 10px; color: var(--faint); }
+
+    .pb {
+      flex: 1; overflow-y: auto; padding: 1rem;
+      display: flex; flex-direction: column; gap: 1rem;
+    }
+
+    .fl {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 0.35rem;
+    }
+    .fl span { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 10px; color: var(--faint); }
+
+    .url-row { display: flex; }
+
+    select.msel {
+      appearance: none;
+      background: var(--bg);
+      border: var(--bw) solid var(--border2); border-right: none;
+      padding: 0 0.75rem; height: 38px;
+      font-family: var(--font); font-size: 12px; font-weight: 700;
+      color: var(--green); cursor: pointer; min-width: 88px;
+      border-radius: var(--r) 0 0 var(--r);
+    }
+    select.msel:focus { outline: none; }
+    select.msel[data-m="GET"]    { color: var(--green); }
+    select.msel[data-m="POST"]   { color: var(--yellow); }
+    select.msel[data-m="PUT"]    { color: var(--blue); }
+    select.msel[data-m="DELETE"] { color: var(--red); }
+    select.msel[data-m="HEAD"]   { color: var(--purple); }
+
+    input.url-in {
+      flex: 1; height: 38px;
+      background: var(--bg);
+      border: var(--bw) solid var(--border2);
+      padding: 0 0.7rem;
+      font-family: var(--font); font-size: 12px; color: var(--ink);
+      min-width: 0;
+    }
+    input.url-in::placeholder { color: var(--faint); }
+    input.url-in:focus { outline: none; border-color: var(--green); }
+
+    /* SEND BTN — color según método */
+    .send-btn {
+      height: 38px; padding: 0 1rem;
+      font-family: var(--font); font-size: 11px; font-weight: 700;
+      letter-spacing: 0.08em; cursor: pointer; white-space: nowrap;
+      border-radius: 0 var(--r) var(--r) 0;
+      transition: filter 0.1s, box-shadow 0.1s, transform 0.1s;
+      color: #fff;
+    }
+    .send-btn:hover  { filter: brightness(1.1); transform: translate(-1px,-1px); }
+    .send-btn:active { filter: brightness(0.9); transform: translate(2px,2px); }
+    .send-btn:disabled { background: var(--faint) !important; border-color: var(--border2) !important; color: var(--muted); box-shadow: none !important; transform: none; cursor: not-allowed; }
+
+    .send-btn.m-GET    { background: var(--green);  border: var(--bw) solid var(--green);  box-shadow: 3px 3px 0 #005520; }
+    .send-btn.m-POST   { background: var(--yellow); border: var(--bw) solid var(--yellow); box-shadow: 3px 3px 0 #7a4800; }
+    .send-btn.m-PUT    { background: var(--blue);   border: var(--bw) solid var(--blue);   box-shadow: 3px 3px 0 #003388; }
+    .send-btn.m-DELETE { background: var(--red);    border: var(--bw) solid var(--red);    box-shadow: 3px 3px 0 #880000; }
+    .send-btn.m-HEAD   { background: var(--purple); border: var(--bw) solid var(--purple); box-shadow: 3px 3px 0 #4a007a; }
+
+    textarea {
+      width: 100%;
+      background: var(--bg);
+      border: var(--bw) solid var(--border2);
+      padding: 0.5rem 0.7rem;
+      font-family: var(--font); font-size: 12px; color: var(--ink);
+      resize: vertical; line-height: 1.6; border-radius: var(--r);
+    }
+    textarea::placeholder { color: var(--faint); }
+    textarea:focus { outline: none; border-color: var(--green); }
+
+    /* API key field — colaps after save */
+    .api-key-field { transition: max-height 0.25s ease, opacity 0.2s; overflow: hidden; }
+    .api-key-field.hidden { max-height: 0 !important; opacity: 0; pointer-events: none; }
+
+    .key-row { display: flex; }
+    input.key-in {
+      flex: 1; height: 36px;
+      background: var(--bg);
+      border: var(--bw) solid var(--border2);
+      padding: 0 0.7rem;
+      font-family: var(--font); font-size: 12px; color: var(--ink);
+      border-radius: var(--r) 0 0 var(--r);
+    }
+    input.key-in::placeholder { color: var(--faint); }
+    input.key-in:focus { outline: none; border-color: var(--green); }
+    .key-set-btn {
+      height: 36px; padding: 0 0.75rem;
+      background: var(--green-lt); border: var(--bw) solid var(--green-bdr);
+      font-family: var(--font); font-size: 10px; font-weight: 700;
+      letter-spacing: 0.08em; color: var(--green); cursor: pointer;
+      border-radius: 0 var(--r) var(--r) 0; white-space: nowrap;
+    }
+    .key-set-btn:hover { background: #d0eddc; }
+
+    .h-item {
+      display: flex; align-items: center; gap: 0.45rem;
+      padding: 0.35rem 0.4rem;
+      border: 1px solid transparent; cursor: pointer;
+      background: none; text-align: left; width: 100%;
+      font-family: var(--font);
+      transition: border-color 0.1s, background 0.1s;
+      border-radius: var(--r);
+    }
+    .h-item:hover { border-color: var(--border2); background: var(--surface2); }
+
+    .h-m {
+      font-size: 10px; font-weight: 700; width: 54px; text-align: center;
+      border: 1px solid currentColor; padding: 1px 0; flex-shrink: 0; border-radius: 2px;
+    }
+    .h-url { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .h-st  { font-size: 11px; font-weight: 700; flex-shrink: 0; }
+
+    .empty { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+    .empty pre { font-size: 12px; color: var(--faint); line-height: 1.9; text-align: left; }
+
+    @keyframes revealClip {
+      from { clip-path: inset(10px 0 0 0); opacity: 0; }
+      to   { clip-path: inset(0 0 0 0);    opacity: 1; }
+    }
+    .resp-content {
+      display: flex; flex-direction: column; flex: 1; min-height: 0;
+      animation: revealClip 0.18s cubic-bezier(0.16,1,0.3,1);
+    }
+    @media (prefers-reduced-motion: reduce) { .resp-content { animation: none; } }
+
+    .sbar {
+      display: flex; align-items: center; gap: 0.65rem;
+      padding: 0.45rem 1rem;
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .sbadge {
+      font-size: 13px; font-weight: 700; padding: 2px 10px;
+      border: var(--bw) solid currentColor; border-radius: var(--r);
+    }
+    .s2 { color: var(--green);  background: var(--green-lt); }
+    .s3 { color: var(--blue);   background: var(--blue-lt); }
+    .s4 { color: var(--yellow); background: var(--yellow-lt); }
+    .s5 { color: var(--red);    background: var(--red-lt); }
+    .stext { font-size: 12px; color: var(--ink2); }
+    .sms   { font-size: 11px; color: var(--muted); margin-left: auto; }
+
+    .rtabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .rtab {
+      font-family: var(--font); font-size: 10px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 7px 14px; cursor: pointer; border: none; background: none;
+      color: var(--muted); border-bottom: 2px solid transparent;
+      transition: color 0.1s, border-color 0.1s;
+    }
+    .rtab:hover  { color: var(--ink); }
+    .rtab.active { color: var(--green); border-color: var(--green); }
+
+    .rbody { flex: 1; overflow: auto; padding: 0.875rem 1rem; }
+    pre.code {
+      font-family: var(--font); font-size: 12px;
+      line-height: 1.75; white-space: pre-wrap; word-break: break-all; color: var(--ink2);
+    }
+
+    .jk { color: #0055cc; }
+    .js { color: #008832; }
+    .jn { color: #cc2200; }
+    .jb { color: #7700cc; }
+    .jz { color: var(--muted); }
+
+    .htbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .htbl tr { border-bottom: 1px solid var(--border); }
+    .htbl tr:last-child { border-bottom: none; }
+    .htbl td { padding: 5px 8px; vertical-align: top; }
+    .htbl td:first-child { color: var(--muted); width: 40%; word-break: break-all; }
+    .htbl td:last-child  { word-break: break-all; color: var(--ink2); }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin {
+      display: inline-block; width: 10px; height: 10px;
+      border: 1.5px solid transparent;
+      border-top-color: #fff; border-right-color: #fff;
+      border-radius: 50%; animation: spin 0.55s linear infinite; vertical-align: middle;
+    }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 3px; }
+
+    @media (max-width: 700px) {
+      .workspace { grid-template-columns: 1fr; height: auto; }
+      .panel-left { border-right: none; border-bottom: var(--bw) solid var(--border2); }
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    http-client<span class="cursor"></span>
+    <span class="brand-sub">// USJ 2026</span>
+  </div>
+  <div class="topbar-right">
+    <div class="proxy-pill" id="proxyPill">
+      <div class="pdot" id="pdot"></div>
+      <span id="plabel">proxy off</span>
+    </div>
+    <button class="key-badge" id="keyBadge" onclick="clearKey()" title="Click para borrar api-key">
+      <div class="key-badge-dot"></div>
+      <span id="klabel">api-key</span>
+      <span style="font-size:10px;color:var(--green-bdr)">✕</span>
+    </button>
+  </div>
+</header>
+
+<div class="workspace">
+
+  <section class="panel panel-left">
+    <div class="ph">
+      <span class="ph-label">Request</span>
+      <span class="ph-meta" id="reqCount">0 sent</span>
+    </div>
+    <div class="pb">
+
+      <!-- API KEY — left panel -->
+      <div class="api-key-field" id="apiKeyField">
+        <div class="fl">API Key <span>(x-api-key — inyectada automáticamente)</span></div>
+        <div class="key-row">
+          <input class="key-in" id="keyIn" type="text"
+            placeholder="your-secret-key"
+            onkeydown="if(event.key==='Enter')saveKey()" />
+          <button class="key-set-btn" onclick="saveKey()">SET ↑</button>
+        </div>
+      </div>
+
+      <!-- Method + URL -->
+      <div>
+        <div class="fl">Method &amp; URL</div>
+        <div class="url-row">
+          <select class="msel" id="msel" onchange="syncM()" data-m="GET">
+            <option>GET</option>
+            <option>POST</option>
+            <option>PUT</option>
+            <option>DELETE</option>
+            <option>HEAD</option>
+          </select>
+          <input class="url-in" id="urlIn" type="text"
+            placeholder="http://localhost:3000/dogs"
+            onkeydown="if(event.key==='Enter')send()" />
+          <button class="send-btn m-GET" id="sendBtn" onclick="send()">▶ SEND</button>
+        </div>
+      </div>
+
+      <!-- Headers -->
+      <div>
+        <div class="fl">Headers <span>(key: value — one per line)</span></div>
+        <textarea id="hdrsArea" rows="4"
+          placeholder="Content-Type: application/json&#10;X-Custom: value"></textarea>
+      </div>
+
+      <!-- Body -->
+      <div>
+        <div class="fl">Body <span>(JSON)</span></div>
+        <textarea id="bodyArea" rows="6"
+          placeholder='{"name":"Rex","breed":"Husky","age":2}'></textarea>
+      </div>
+
+      <!-- History -->
+      <div>
+        <div class="fl">History</div>
+        <div id="histList">
+          <p style="font-size:11px;color:var(--faint)">— empty —</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="panel" id="respPanel">
+    <div class="ph"><span class="ph-label">Response</span></div>
+    <div class="empty" id="emptyState">
+      <pre>
+╔══════════════════════════════════════╗
+║   waiting for request...            ║
+║                                     ║
+║   fill method + url above           ║
+║   then press  ▶ SEND  or Enter      ║
+║                                     ║
+║   api-key is injected automatically ║
+╚══════════════════════════════════════╝</pre>
+    </div>
+  </section>
+
+</div>
+
+<script>
+const PROXY = 'http://localhost:4000/send';
+let apiKey  = '';
+let hist    = [];
+let sent    = 0;
+
+const MBTN = { GET:'m-GET', POST:'m-POST', PUT:'m-PUT', DELETE:'m-DELETE', HEAD:'m-HEAD' };
+const MC   = { GET:'var(--green)', POST:'var(--yellow)', PUT:'var(--blue)', DELETE:'var(--red)', HEAD:'var(--purple)' };
+
+async function pingProxy() {
+  try {
+    await fetch(PROXY, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({method:'GET', url:'http://ping', headers:{}, body:null}),
+      signal: AbortSignal.timeout(1500)
+    });
+    setProxy(true);
+  } catch { setProxy(false); }
+}
+function setProxy(ok) {
+  document.getElementById('pdot').className     = 'pdot' + (ok ? ' on' : '');
+  document.getElementById('plabel').textContent = ok ? 'proxy ok' : 'proxy off';
+}
+pingProxy();
+setInterval(pingProxy, 8000);
+
+function syncM() {
+  const s   = document.getElementById('msel');
+  const btn = document.getElementById('sendBtn');
+  const m   = s.value;
+  s.setAttribute('data-m', m);
+  Object.values(MBTN).forEach(c => btn.classList.remove(c));
+  btn.classList.add(MBTN[m] || 'm-GET');
+}
+
+function parseHdrs(raw) {
+  const h = {};
+  for (const line of raw.split('\n')) {
+    const i = line.indexOf(':');
+    if (i !== -1) {
+      const k = line.slice(0,i).trim();
+      const v = line.slice(i+1).trim();
+      if (k) h[k] = v;
+    }
+  }
+  return h;
+}
+
+async function send() {
+  const url    = document.getElementById('urlIn').value.trim();
+  const method = document.getElementById('msel').value;
+  const rawH   = document.getElementById('hdrsArea').value;
+  const rawB   = document.getElementById('bodyArea').value.trim();
+
+  if (!url) { document.getElementById('urlIn').focus(); return; }
+
+  const headers = {};
+  if (apiKey) headers['x-api-key'] = apiKey;
+  Object.assign(headers, parseHdrs(rawH));
+
+  let body = null;
+  if (rawB) { try { body = JSON.parse(rawB); } catch { body = rawB; } }
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> sending';
+
+  const t0 = performance.now();
+  try {
+    const r    = await fetch(PROXY, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({method, url, headers, body})
+    });
+    const data = await r.json();
+    const ms   = Math.round(performance.now() - t0);
+    renderResp(data, ms);
+    addHist(method, url, data.statusCode);
+  } catch(err) {
+    renderErr(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '▶ SEND';
+  }
+}
+
+function hl(json) {
+  return json
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, m => {
+      if (/^"/.test(m)) return /:$/.test(m) ? `<span class="jk">${m}</span>` : `<span class="js">${m}</span>`;
+      if (/true|false/.test(m)) return `<span class="jb">${m}</span>`;
+      if (/null/.test(m))       return `<span class="jz">${m}</span>`;
+      return `<span class="jn">${m}</span>`;
+    });
+}
+
+function sc(code) {
+  if (code >= 500) return 's5';
+  if (code >= 400) return 's4';
+  if (code >= 300) return 's3';
+  return 's2';
+}
+
+function renderResp(data, ms) {
+  let bodyHtml = '<span style="color:var(--faint)">— empty body —</span>';
+  if (data.body && data.body.length > 0) {
+    try { bodyHtml = hl(JSON.stringify(JSON.parse(data.body), null, 2)); }
+    catch { bodyHtml = data.body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  }
+  const hrows  = Object.entries(data.headers||{}).map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+  const hcount = Object.keys(data.headers||{}).length;
+
+  document.getElementById('respPanel').innerHTML = `
+    <div class="ph"><span class="ph-label">Response</span></div>
+    <div class="resp-content">
+      <div class="sbar">
+        <span class="sbadge ${sc(data.statusCode)}">${data.statusCode}</span>
+        <span class="stext">${data.statusText}</span>
+        <span class="sms">${ms} ms</span>
+      </div>
+      <div class="rtabs">
+        <button class="rtab active" onclick="tab('body',this)">Body</button>
+        <button class="rtab" onclick="tab('headers',this)">Headers (${hcount})</button>
+      </div>
+      <div class="rbody" id="tBody"><pre class="code">${bodyHtml}</pre></div>
+      <div class="rbody" id="tHeaders" style="display:none">
+        <table class="htbl"><tbody>${hrows}</tbody></table>
+      </div>
+    </div>`;
+}
+
+function renderErr(msg) {
+  document.getElementById('respPanel').innerHTML = `
+    <div class="ph"><span class="ph-label">Response</span></div>
+    <div class="resp-content">
+      <div class="sbar">
+        <span class="sbadge s5">ERR</span>
+        <span class="stext">proxy unreachable — ¿está corriendo node client/proxy.js?</span>
+      </div>
+      <div class="rbody"><pre class="code" style="color:var(--red)">${msg}</pre></div>
+    </div>`;
+}
+
+function tab(which, el) {
+  document.querySelectorAll('.rtab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const b = document.getElementById('tBody');
+  const h = document.getElementById('tHeaders');
+  if (!b || !h) return;
+  b.style.display = which==='body'    ? '' : 'none';
+  h.style.display = which==='headers' ? '' : 'none';
+}
+
+function addHist(method, url, status) {
+  hist.unshift({method, url, status});
+  if (hist.length > 15) hist.pop();
+  sent++;
+  document.getElementById('reqCount').textContent = `${sent} sent`;
+  renderHist();
+}
+function renderHist() {
+  const el = document.getElementById('histList');
+  if (!hist.length) { el.innerHTML = '<p style="font-size:11px;color:var(--faint)">— empty —</p>'; return; }
+  el.innerHTML = hist.map((h,i) => {
+    const cc = h.status >= 400 ? 'var(--red)' : h.status >= 300 ? 'var(--blue)' : 'var(--green)';
+    return `<button class="h-item" onclick="replayHist(${i})">
+      <span class="h-m" style="color:${MC[h.method]||'var(--muted)'}">${h.method}</span>
+      <span class="h-url">${h.url}</span>
+      <span class="h-st" style="color:${cc}">${h.status}</span>
+    </button>`;
+  }).join('');
+}
+function replayHist(i) {
+  const h = hist[i]; if (!h) return;
+  document.getElementById('urlIn').value = h.url;
+  document.getElementById('msel').value  = h.method;
+  syncM();
+}
+
+function saveKey() {
+  const val = document.getElementById('keyIn').value.trim();
+  if (!val) return;
+  apiKey = val;
+  document.getElementById('apiKeyField').classList.add('hidden');
+  const badge = document.getElementById('keyBadge');
+  badge.classList.add('visible');
+  const short = apiKey.length > 12 ? apiKey.slice(0,12)+'…' : apiKey;
+  document.getElementById('klabel').textContent = short;
+}
+
+function clearKey() {
+  apiKey = '';
+  document.getElementById('keyIn').value = '';
+  document.getElementById('apiKeyField').classList.remove('hidden');
+  document.getElementById('keyBadge').classList.remove('visible');
+}
+</script>
+</body>
+</html>

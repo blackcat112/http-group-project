@@ -1,0 +1,31 @@
+name: 👮 Linter de Reglas del Equipo (PRs)
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - synchronize
+
+jobs:
+  main:
+    name: Validar Título del Pull Request
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Estas son EXCLUSIVAMENTE las etiquetas permitidas en vuestro README de Universidad
+          types: |
+            feat
+            fix
+            chore
+            docs
+            test
+            refactor
+          # Requerimos estricamente que tenga un scope opcional si el usuario lo ve útil, pero el tipo es sagrado
+          requireScope: false
+          # Un mensaje personalizado de error si tus compañeros se equivocan para ayudarles a recordar la regla
+          headerPattern: '^(\w*)(?:\(([\w$.\-*/ ]*)\))?: (.*)$'
+          headerPatternCorrespondence: type, scope, subject

@@ -1,0 +1,21 @@
+{
+  "name": "http-group-project",
+  "version": "1.0.0",
+  "description": "Implementación de un cliente y servidor HTTP/1.1 desde cero usando sockets TCP crudos",
+  "main": "server/index.js",
+  "scripts": {
+    "start:server": "node server/index.js",
+    "dev:server": "node server/index.js --port 3000",
+    "test": "jest"
+  },
+  "keywords": [
+    "http",
+    "tcp",
+    "net"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^30.3.0"
+  }
+}
