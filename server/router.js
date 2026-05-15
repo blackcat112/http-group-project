@@ -109,6 +109,18 @@ async function handleRequest(req) {
         return await match.handler(req);
     }
 
+    let routeExistsForOtherMethod = false;
+    for (const registeredMethod of Object.keys(routes)) {
+        if (registeredMethod !== method && matchRoute(registeredMethod, reqPath)) {
+            routeExistsForOtherMethod = true;
+            break;
+        }
+    }
+
+    if (routeExistsForOtherMethod) {
+        return build405MethodNotAllowed(`El método ${method} no está permitido en esta ruta`);
+    }
+
     // If not an API route, try to serve a static file
     if (method === 'GET') {
         // Default to index.html for /web
